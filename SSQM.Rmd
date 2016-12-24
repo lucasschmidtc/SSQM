@@ -1,0 +1,993 @@
+---
+title: "Shapelets Sampling and Quality Measures"
+author: "Lucas Schmidt Cavalcante"
+date: "December, 2016"
+output: 
+  github_document:
+    toc: true
+bibliography: bibliography.bib
+csl: transactions-on-knowledge-discovery-from-data.csl
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+Sys.setlocale("LC_ALL", 'en_US.UTF-8')
+```
+
+```{r "Libraries", message=FALSE, warning=FALSE}
+library(rbenchmark)
+
+library(Rcpp)
+library(RcppParallel)
+
+library(R.matlab)
+
+library(reshape2)
+library(broom)
+library(plyr)
+library(tidyr)
+
+library(foreach)
+library(doParallel)
+
+library(ggplot2)
+
+library(caret)
+
+library(class)
+library(e1071)
+library(randomForest)
+library(C50)
+
+library(knitr)
+library(xtable)
+```
+
+```{r "Shapelets Implementation"}
+source("./code/shapeletsRepresentation.R")
+```
+
+```{r "Custom theme", echo=FALSE}
+theme_ssqm <- function (base_size = 12, base_family = "Helvetica") {
+   theme_minimal(base_size = base_size, base_family = base_family) %+replace%
+   theme(axis.line = element_line(size=.5, color = "black"),
+         panel.grid.major = element_line(size = .2, color = "grey90"),
+         panel.grid.minor = element_line(size = .5, color = "grey98"))
+}
+```
+
+```{r "Code for reading the Datasets", echo=FALSE}
+readDataSet <- function(path) {
+  if (grepl("Mat$", path, ignore.case = TRUE) == TRUE) {
+    x <- readMat(path)
+    x <- data.frame(x[[1]])
+  }
+  else {
+    x <- read.table(path)
+  }
+
+  names(x)[1] <- "class"
+  if (min(x$class) == 0) {
+  	x$class <- x$class + 1
+	}
+  
+  names(x)[2:dim(x)[2]] <- 1:(dim(x)[2] - 1)
+  x$class <- as.factor(x$class)
+  x$id <- seq(1:dim(x)[1])
+  x
+}
+```
+
+```{r "Share a legend between two or more ggplot2 graphs", echo=FALSE, eval=FALSE}
+# Taken from https://github.com/hadley/ggplot2/wiki/Share-a-legend-between-two-ggplot2-graphs
+grid_arrange_shared_legend <- function(position = "bottom", ...) {
+    plots <- list(...)
+    g <- ggplotGrob(plots[[1]] + theme(legend.position=position))$grobs
+    legend <- g[[which(sapply(g, function(x) x$name) == "guide-box")]]
+    lheight <- sum(legend$height)
+    grid.arrange(
+        do.call(arrangeGrob, lapply(plots, function(x)
+            x + theme(legend.position="none"))),
+        legend,
+        ncol = 1,
+        heights = unit.c(unit(1, "npc") - lheight, lheight))
+}
+```
+
+```{r, echo=FALSE}
+quality_label <- c(
+  information.gain = "Information Gain",
+  in.class.transitions = "In-Class Transitions",
+  f.statistic = "F-Statistic"
+)
+```
+
+# Introduction
+
+Time series classification has been applied to many fields, and empirical evidence suggests that the simple algorithm of nearest neighbor (NN) coupled with an elastic measure, such as Dynamic Time Warping (DTW), is hard to beat in terms of accuracy [@Batista:2013by]. However, this approach has the following shortcomings [@Ye:2009do]:
+
+* Its results are hard to interpret;
+* It is computationally intensive, given that to classify a new instance it needs to check the whole training set;
+* If time series of different classes are distinguished by a small pattern then it tends to perform poorly, because the noise present on the whole series can dominate any difference caused by the pattern.
+
+To address these shortcomings @Ye:2009do introduced a new primitive for classification called Shapelets. Shapelets are subsequences of time series that are in a sense representative of a class. Good shapelets are the ones that encompasses local patterns that are present in time series of one class but not in others. As an example, the figure below highlights time intervals that are expected to contain good shapelets.
+
+```{r "Illustration of Shapelet", echo=FALSE, fig.width=10, fig.height=4}
+ds <- readDataSet("./../UCR_TS_Archive_2015/Pre_Summer_2015_Datasets/Gun_Point/Gun_Point_TRAIN")
+ds <- gather(ds, time, value, 2:151, convert = TRUE)
+range <- data.frame("class" = 1,
+                    min = c(15, 100),
+                    max = c(45, 150),
+                    stringsAsFactors = FALSE)
+ggplot(data = ds, aes(x = time, y = value, group = id, color = class)) + 
+  geom_line(alpha = 0.5) + 
+  geom_rect(data = range, inherit.aes=FALSE, aes(xmin = min, xmax = max, ymin = -Inf, ymax = Inf), fill = "orange", alpha = 0.3) +
+  facet_wrap( ~ class) + 
+  labs(x = "Time", y = "Value", 
+       title = "The highlighted time interval indicates where good shapelets are expected to be found (GunPoint dataset)") + 
+  theme_ssqm() +
+  theme(legend.position = "none", strip.text.x = element_blank())
+```
+
+Initially a shapelet discovery algorithm was embeded in a decision tree for classification. Such tree had one shapelet (a subsequence) at each node, and the classification resulted from measuring the distance of a new time series to said shapelet. This tree is called the shapelet decision-tree and usually achieves good accuracy [@Ye:2009do].
+
+However good the shapelet decision-tree is, @Hills:2013dk showed that it is possible to attain better accuracy by obtaining what is called the Shapelet Transform of the data. Given a set of good shapelets, one obtains the Shapelet Tranform by describing each time series by its distance to every shapelet, thus the shapelets become attributes in a distance matrix. The breaktrough of this apporach is that this numerical matrix gets away with any temporal aspect and allows the employment of any classifier.
+
+@Hills:2013dk compared the accuracy of the shapelet decision-tree with the accuracy of complex (SVM, Random Forest, Rotation Forest and Bayesian Networks) and simple (Decision-tree, k-NN, Naive Bayes) classifiers executed over the Shapelet Transform. They found that in terms of accuracy  complex classifiers tend to be more accurate than the simpler ones and the shapelet decision-tree. Moreover, they also demonstrated the accuracy equivalency of the shapelet decision-tree and a decision tree induced over the shapelet transform.
+
+One important aspect left-out until now is how to define if a shapelet is good or not. As the shapelets were initially built inside a decision-tree they have been measured by its **information gain**. However, @Lines:2012bv tested some alternatives quality measures, namely the Mood's Median and the Kruskal-Wallis non-parametric test, and found that althought they dont outperform the information gain in terms of accuracy they can be about 20% faster. These findings were also explored by @Hills:2013dk, which also tested the **f-statistic** as a quality measure on their experiments, and found that the f-statistic was the most accurate and had the best average rank (but without significant difference). Moreover, f-statistic was the fastest measure on average and had the fastest time on most datasets. For the authors this was enough to argue that the f-statistic should be the default choice for shapelet quality. We observe that the experiments of both @Lines:2012bv and @Hills:2013dk were done over the shapelet decision-tree, even thought the latter suggested its use over the shapelet transform.
+
+Lastly, as the number of shapelets in a dataset is linear on the amount of time series and quadratic on their length, an exhaustive search of all shapelets can be prohibitve. @Hills:2013dk proposed an algorithm to estimate the length range of good shapelets and only explored those within this range. On the other hand, @Renard:2015wv proposed the use of the simple algorithm of **random sampling**. However, we note that the experiments of @Renard:2015wv were also restricted on the shapelet decision-tree domain.
+
+## Goals
+
+On this work we seek to extend and re-evaluate some of the previous findings about quality measures, accuracy and sampling over the shapelet transform. First of all, we consider that it is important to have accuracy results from the whole set of shapelets to serve as baseline and to then identify any potential impact of using a subset of them:
+
+* The experiments of @Hills:2013dk that found that it is better to use the shapelet transform in cojunction with complex classifiers used only a subset of the shapelets (those within a specfic length range determined by their algorithm). **We aim determine the accuracy of complex and simple classifiers over the shapelet transform using the full set of shapelets to serve as baseline to any further comparison**.
+
+Secondly, we believe that any findings over the shapelet decison-tree should not be assumed to remain true over the shapelet trasnform:
+
+* @Hills:2013dk evaluated some alternative quality measures over the shapelet decision-tree and recommended the f-statistic to be the default quality measure. **As a second goal we aim to investigate how the different quality measures affects the accuracy of 4 classifiers over the shapelet transform**. With this experiment we aim to be able to tell if the former claim holds to be true or not. Morever, we **introduce a new quality measure called in-class-transitions** which we belive to be more accurate and faster than the information gain (but slower than the f-statistic).
+
+Thirdly, from a practical point of view there is a need to reduce the search-space for good shapelets:
+
+* @Hills:2013dk proposed an algorithm that estimates a length range that should contain good shapelets, to then do an exhaustive search on this interval, which hopefully balances speed and accuracy (and doesn't discard good ones). Meanwhile @Renard:2015wv proposed the use of the simple algorithm of random sampling. The results of random sampling of @Renard:2015wv not only were over the shapelet decision-tree but also there was no comparison with the method proposed by @Hills:2013dk. **As a third goal we aim to compare the exhaustive search, random sampling and the method proposed by @Hills:2013dk over the shapelet transform**.
+
+Finally, we propose to exploit the great speed-ups achieved by random sampling to get further insight into the lengths of possible good patterns:
+
+* **We propose to random sample a small amount of shapelets at every possible length in order to a build a graph of accuracy per length that would indicate the length of good patterns on the dataset**. The intutition behind this idea is that shapelets with lengths greater than the pattern should have a decrease in accuracy due to the extra noise, and shapelets with lengths smaller than the pattern should also have a decrease in accuracy for not encompassing the whole pattern, thus a dataset with two patterns of different sizes should have two peaks. 
+
+# Experimental Setup
+
+## Datasets
+
+```{r "Datasets", echo=FALSE}
+dataSets <- data.frame("name" = c("TwoLeadECG",
+                                  "Gun-Point",
+                                  "DiatomSizeReduction",
+                                  "ECGFiveDays",
+                                  "MoteStrain",
+                                  "SonyAIBORobot Surface",
+                                  "ToeSegmentation1",
+                                  "CBF",
+                                  "ProximalPhalanxTW",
+                                  "MiddlePhalanxOutlineAgeGroup",
+                                  "MiddlePhalanxOutlineCorrect",
+                                  "DistalPhalanxOutlineAgeGroup",
+                                  "DistalPhalanxOutlineCorrect",
+                                  "Symbols",
+                                  "Synthetic Control",
+                                  "FacesUCR",
+                                  "ArrowHead",
+                                  "MedicalImages",
+                                  "Face (four)",
+                                  "Plane",
+                                  "Wine",
+                                  "Coffee",
+                                  "ToeSegmentation2",
+                                  "ShapeletSim",
+                                  "Beef",
+                                  "Trace",
+                                  "Swedish Leaf",
+                                  "BeetleFly"),
+                       "path.train" = c("./../UCR_TS_Archive_2015/Pre_Summer_2015_Datasets/TwoLeadECG/TwoLeadECG_TRAIN",
+                                        "./../UCR_TS_Archive_2015/Pre_Summer_2015_Datasets/Gun_Point/Gun_Point_TRAIN",
+                                        "./../UCR_TS_Archive_2015/Pre_Summer_2015_Datasets/DiatomSizeReduction/DiatomSizeReduction_TRAIN",
+                                        "./../UCR_TS_Archive_2015/Pre_Summer_2015_Datasets/ECGFiveDays/ECGFiveDays_TRAIN",
+                                        "./../UCR_TS_Archive_2015/Pre_Summer_2015_Datasets/MoteStrain/MoteStrain_TRAIN",
+                                        "./../UCR_TS_Archive_2015/Pre_Summer_2015_Datasets/SonyAIBORobotSurface/SonyAIBORobotSurface_TRAIN",
+                                        "./../UCR_TS_Archive_2015/Newly Added Datasets/ToeSegmentation1/ToeSegmentation1_TRAIN.mat",
+                                        "./../UCR_TS_Archive_2015/Pre_Summer_2015_Datasets/CBF/CBF_TRAIN",
+                                        "./../UCR_TS_Archive_2015/Newly Added Datasets/ProximalPhalanxTW/ProximalPhalanxTW_TRAIN.mat",
+                                        "./../UCR_TS_Archive_2015/Newly Added Datasets/MiddlePhalanxOutlineAgeGroup/MiddlePhalanxOutlineAgeGroup_TRAIN.mat",
+                                        "./../UCR_TS_Archive_2015/Newly Added Datasets/MiddlePhalanxOutlineCorrect/MiddlePhalanxOutlineCorrect_TRAIN.mat",
+                                        "./../UCR_TS_Archive_2015/Newly Added Datasets/DistalPhalanxOutlineAgeGroup/DistalPhalanxOutlineAgeGroup_TRAIN.mat",
+                                        "./../UCR_TS_Archive_2015/Newly Added Datasets/DistalPhalanxOutlineCorrect/DistalPhalanxOutlineCorrect_TRAIN.mat",
+                                        "./../UCR_TS_Archive_2015/Pre_Summer_2015_Datasets/Symbols/Symbols_TRAIN",
+                                        "./../UCR_TS_Archive_2015/Pre_Summer_2015_Datasets/synthetic_control/synthetic_control_TRAIN",
+                                        "./../UCR_TS_Archive_2015/Pre_Summer_2015_Datasets/FacesUCR/FacesUCR_TRAIN",
+                                        "./../UCR_TS_Archive_2015/Newly Added Datasets/ArrowHead/ArrowHead_TRAIN.mat",
+                                        "./../UCR_TS_Archive_2015/Pre_Summer_2015_Datasets/MedicalImages/MedicalImages_TRAIN",
+                                        "./../UCR_TS_Archive_2015/Pre_Summer_2015_Datasets/FaceFour/FaceFour_TRAIN",
+                                        "./../UCR_TS_Archive_2015/Pre_Summer_2015_Datasets/Plane/Plane_TRAIN.mat",
+                                        "./../UCR_TS_Archive_2015/Newly Added Datasets/Wine/Wine_TRAIN.mat",
+                                        "./../UCR_TS_Archive_2015/Pre_Summer_2015_Datasets/Coffee/Coffee_TRAIN.mat",
+                                        "./../UCR_TS_Archive_2015/Newly Added Datasets/ToeSegmentation2/ToeSegmentation2_TRAIN.mat",
+                                        "./../UCR_TS_Archive_2015/Newly Added Datasets/ShapeletSim/ShapeletSim_TRAIN.mat",
+                                        "./../UCR_TS_Archive_2015/Pre_Summer_2015_Datasets/Beef/Beef_TRAIN.mat",
+                                        "./../UCR_TS_Archive_2015/Pre_Summer_2015_Datasets/Trace/Trace_TRAIN",
+                                        "./../UCR_TS_Archive_2015/Pre_Summer_2015_Datasets/SwedishLeaf/SwedishLeaf_TRAIN.mat",
+                                        "./../UCR_TS_Archive_2015/Newly Added Datasets/BeetleFly/BeetleFly_TRAIN.mat"),
+                       "path.test" = c("./../UCR_TS_Archive_2015/Pre_Summer_2015_Datasets/TwoLeadECG/TwoLeadECG_TEST",
+                                       "./../UCR_TS_Archive_2015/Pre_Summer_2015_Datasets/Gun_Point/Gun_Point_TEST",
+                                       "./../UCR_TS_Archive_2015/Pre_Summer_2015_Datasets/DiatomSizeReduction/DiatomSizeReduction_TEST",
+                                       "./../UCR_TS_Archive_2015/Pre_Summer_2015_Datasets/ECGFiveDays/ECGFiveDays_TEST",
+                                       "./../UCR_TS_Archive_2015/Pre_Summer_2015_Datasets/MoteStrain/MoteStrain_TEST",
+                                       "./../UCR_TS_Archive_2015/Pre_Summer_2015_Datasets/SonyAIBORobotSurface/SonyAIBORobotSurface_TEST",
+                                       "./../UCR_TS_Archive_2015/Newly Added Datasets/ToeSegmentation1/ToeSegmentation1_TEST.mat",
+                                       "./../UCR_TS_Archive_2015/Pre_Summer_2015_Datasets/CBF/CBF_TEST",
+                                       "./../UCR_TS_Archive_2015/Newly Added Datasets/ProximalPhalanxTW/ProximalPhalanxTW_TEST.mat",
+                                       "./../UCR_TS_Archive_2015/Newly Added Datasets/MiddlePhalanxOutlineAgeGroup/MiddlePhalanxOutlineAgeGroup_TEST.mat",
+                                       "./../UCR_TS_Archive_2015/Newly Added Datasets/MiddlePhalanxOutlineCorrect/MiddlePhalanxOutlineCorrect_TEST.mat",
+                                       "./../UCR_TS_Archive_2015/Newly Added Datasets/DistalPhalanxOutlineAgeGroup/DistalPhalanxOutlineAgeGroup_TEST.mat",
+                                       "./../UCR_TS_Archive_2015/Newly Added Datasets/DistalPhalanxOutlineCorrect/DistalPhalanxOutlineCorrect_TEST.mat",
+                                       "./../UCR_TS_Archive_2015/Pre_Summer_2015_Datasets/Symbols/Symbols_TEST",
+                                       "./../UCR_TS_Archive_2015/Pre_Summer_2015_Datasets/synthetic_control/synthetic_control_TEST",
+                                       "./../UCR_TS_Archive_2015/Pre_Summer_2015_Datasets/FacesUCR/FacesUCR_TEST",
+                                       "./../UCR_TS_Archive_2015/Newly Added Datasets/ArrowHead/ArrowHead_TEST.mat",
+                                       "./../UCR_TS_Archive_2015/Pre_Summer_2015_Datasets/MedicalImages/MedicalImages_TEST",
+                                       "./../UCR_TS_Archive_2015/Pre_Summer_2015_Datasets/FaceFour/FaceFour_TEST",
+                                       "./../UCR_TS_Archive_2015/Pre_Summer_2015_Datasets/Plane/Plane_TEST.mat",
+                                       "./../UCR_TS_Archive_2015/Newly Added Datasets/Wine/Wine_TEST.mat",
+                                       "./../UCR_TS_Archive_2015/Pre_Summer_2015_Datasets/Coffee/Coffee_TEST.mat",
+                                       "./../UCR_TS_Archive_2015/Newly Added Datasets/ToeSegmentation2/ToeSegmentation2_TEST.mat",
+                                       "./../UCR_TS_Archive_2015/Newly Added Datasets/ShapeletSim/ShapeletSim_TEST.mat",
+                                       "./../UCR_TS_Archive_2015/Pre_Summer_2015_Datasets/Beef/Beef_TEST.mat",
+                                       "./../UCR_TS_Archive_2015/Pre_Summer_2015_Datasets/Trace/Trace_TEST",
+                                       "./../UCR_TS_Archive_2015/Pre_Summer_2015_Datasets/SwedishLeaf/SwedishLeaf_TEST.mat",
+                                       "./../UCR_TS_Archive_2015/Newly Added Datasets/BeetleFly/BeetleFly_TEST.mat"),
+                       stringsAsFactors = FALSE)
+```
+
+All of our experiments were conducted over `r dim(dataSets)[1]` datasets taken from the UCR Repository [@UCRArchive]. A brief description of them is given at the table below.
+
+```{r "Shapelets Extraction", cache=TRUE}
+dataSetsProcessed <- list()
+for (i in 1:dim(dataSets)[1]) {
+  train <- readDataSet(dataSets$path.train[i])
+  test <- readDataSet(dataSets$path.test[i])
+  
+  information <- list()
+  information$name <- dataSets$name[i]
+  information$path.train <- dataSets$path.train[i]
+  information$path.test <- dataSets$path.test[i]
+  information$no.train <- dim(train)[1]
+  information$no.test <- dim(test)[1]
+  information$no.classes <- length(levels(train$class))
+  information$length <- dim(train)[2] - 2
+  
+  bench <- benchmark(df <- computeShapelets(train),
+                     replications = 1)
+  
+  information$shapelets <- df
+  information$no.shapelets <- dim(df)[1]
+  information$time <- bench$elapsed
+  
+  dataSetsProcessed[[i]] <- information
+}
+```
+
+```{r, echo=FALSE}
+length <- dim(dataSets)[1]
+dataSetsDescription <- data.frame("name" = character(length),
+                                  "no.classes" = integer(length),
+                                  "no.train" = integer(length),
+                                  "no.test" = integer(length),
+                                  "length" = integer(length),
+                                  "no.shapelets" = integer(length),
+                                  stringsAsFactors = FALSE)
+
+for (i in 1:length) {
+	dataSetsDescription$name[i] <- dataSetsProcessed[[i]]$name
+	dataSetsDescription$no.classes[i] <- dataSetsProcessed[[i]]$no.classes
+  dataSetsDescription$no.train[i] <- dataSetsProcessed[[i]]$no.train
+	dataSetsDescription$no.test[i] <- dataSetsProcessed[[i]]$no.test
+	dataSetsDescription$length[i] <- dataSetsProcessed[[i]]$length
+	dataSetsDescription$no.shapelets[i] <- dataSetsProcessed[[i]]$no.shapelets
+}
+dataSetsDescription <- dataSetsDescription[order(dataSetsDescription$no.classes, dataSetsDescription$length, dataSetsDescription$no.shapelets), ]
+
+kable(xtable(dataSetsDescription), 
+      format = "pandoc", 
+      caption = "Description of the data sets used on this work. All of them were retrieved from the UCR Repository.", 
+      row.names = FALSE,
+      col.names = c("Name", "Amount of Classes", "Instances on Train Set", "Instances on Test Set", 
+                    "Series Length", "Total Number of Shapelets"))
+```
+
+## Classifiers
+
+Most of our stated goals are centered on accuracy comparisons. In order to fulfill these goals we selected 4 classifiers from which their accuracy will be measured: the C5.0 Decision Tree classifier [@quinlan2003c5], as the baseline classifier [@Ye:2009do]; the Nearest Neighbour classifier, given its strong empirical support [@Batista:2013by]; the Random Forest classifier [@Breiman:2001fb], as one of the complex classifiers evaluated by @Hills:2013dk; and the SVM classifier, which in overall had the best results [@Hills:2013dk]. Also, we believe that this choice of simple and complex classifiers that produces signifcantly different classification boundaries will stress the selection of good and bad shapelets by the quality measures.
+
+Below one can inspect at which paremeters each of these classifers were executed.
+
+```{r "Evaluation using the C5.0 decision tree"}
+# evaluates the selected features by using the C5.0 decision tree classifier
+C50Evaluation <- function(features) {
+  trainF <- subset(features, features$set == "train")
+  testF <- subset(features, features$set == "test")
+  idx <- which(names(trainF) == "set")
+
+  model <- C5.0(formula = class ~ ., data = trainF[ , -idx])
+  prediction <- predict(model, testF[ , -idx])
+
+  confusionMatrix(prediction, testF$class)
+}
+```
+
+```{r "Evaluation using SVM"}
+# evaluates the selected features by using the SVM classifier (with linear kernel)
+SVMEvaluation <- function(features) {
+  trainF <- subset(features, features$set == "train")
+  testF <- subset(features, features$set == "test")
+  idx <- which(names(trainF) == "set")
+
+  model <- svm(class ~ ., data = trainF[ , -idx], kernel = "linear")
+  prediction <- predict(model, testF[ , -idx])
+  confusionMatrix(prediction, testF$class)
+}
+```
+
+```{r "Evaluation using Random Forest"}
+# evaluates the selected features by using the Random Forest classifier
+RFEvaluation <- function(features) {
+  trainF <- subset(features, features$set == "train")
+  testF <- subset(features, features$set == "test")
+  idxs <- which(names(trainF) %in% c("class", "set"))
+
+  prediction <- randomForest(x = trainF[ , -idxs], 
+                             y = trainF$class, 
+                             xtest = testF[ , -idxs], 
+                             ytest = testF$class, 
+                             ntrees = dim(trainF)[1] * 5)$test$predicted
+  
+  confusionMatrix(prediction, testF$class)
+}
+```
+
+```{r "Evaluation using Nearest Neighbors"}
+# evaluates the selected features by using the Nearest Neighbors classifier
+NNEvaluation <- function(features) {
+  trainF <- subset(features, features$set == "train")
+  testF <- subset(features, features$set == "test")
+  idxs <- which(names(trainF) %in% c("class", "set"))
+
+  prediction <- knn1(trainF[ , -idxs], testF[ , -idxs], trainF$class)
+
+  confusionMatrix(prediction, testF$class)
+}
+```
+
+```{r "Evaluation using the 1-Nearest Neighbor without the Shapelet Transform"}
+# evaluates using the 1-nearest neighbor without shapelet trasnform (accuracy baseline).
+NN1Evaluation <- function(train, test) {
+  tr <- as.matrix(train[ , -which(names(train) %in% c("id", "class"))])
+	tt <- as.matrix(test[ , -which(names(test) %in% c("id", "class"))])
+	prediction <- knn1(tr, tt, train$class)
+	confusionMatrix(prediction, test$class)
+}
+```
+
+```{r "dataframe prototype", echo=FALSE}
+# function that returns a common dataframe for the accuracy results of different classifiers
+dfPrototype <- function(classifier, quality, k, no.features, p, no.trees, acc) {
+  df <- data.frame("classifier" = classifier,
+                   "quality.measurement" = quality,
+                   "k.features" = k,
+                   "no.features" = no.features,
+                   "percentage" = p,
+                   "no.trees" = no.trees,
+                   "accuracy" = acc)
+  df
+}
+```
+
+```{r "Code that evaluates the accuracy at different numbers of features and percentages of shapelets sampled"}
+evaluateAccuracy <- function(shapelets,
+                             train,
+                             test,
+                             no.classes,
+                             k.features,
+                             percentages) {
+	df <- data.frame()
+	
+	no.shapelets <- dim(shapelets)[1]
+	registerDoParallel(cores = 3)
+	for (k in k.features) {
+		for (p in percentages) {
+		  indexes <- list()
+		  for (r in 1:10) {
+		    indexes[[r]] <- sample(1:no.shapelets , size = p * no.shapelets, replace = FALSE)
+		  }
+		  
+		  for (r in 1:10) {
+			  sampled <- shapelets[indexes[[r]], ]
+			  no.features <- k * no.classes
+			  
+			  tmp <- foreach(chunk = 1:3, .combine = rbind, .inorder = TRUE) %dopar% {
+				  if (chunk == 1) {
+					  selected <- shapeletsSelection(sampled, no.features, "information.gain")
+					  features <- shapeletsToFeatures(selected, train, test)
+					  
+					  no.selected <- dim(selected)[1]
+					  rbind(dfPrototype("SVM", "information.gain", k, no.selected, p, NA, 
+					                    SVMEvaluation(features)$overall[[1]]),
+					        dfPrototype("Random Forest", "information.gain", k, no.selected, p, 5 * dim(train)[1], 
+					                    RFEvaluation(features)$overall[[1]]),
+					        dfPrototype("Nearest Neighbour", "information.gain", k, no.selected, p, NA, 
+					                    NNEvaluation(features)$overall[[1]]),
+					        dfPrototype("C5.0 Decision Tree", "information.gain", k, no.selected, p, NA, 
+					                    C50Evaluation(features)$overall[[1]]))
+				  }
+				  else if (chunk == 2) {
+					  selected <- shapeletsSelection(sampled, no.features, "f.statistic")
+					  features <- shapeletsToFeatures(selected, train, test)
+					  
+					  no.selected <- dim(selected)[1]
+					  rbind(dfPrototype("SVM", "f.statistic", k, no.selected, p, NA, 
+					                    SVMEvaluation(features)$overall[[1]]),
+					        dfPrototype("Random Forest", "f.statistic", k, no.selected, p, 5 * dim(train)[1], 
+					                    RFEvaluation(features)$overall[[1]]),
+					        dfPrototype("Nearest Neighbour", "f.statistic", k, no.selected, p, NA, 
+					                    NNEvaluation(features)$overall[[1]]),
+					        dfPrototype("C5.0 Decision Tree", "f.statistic", k, no.selected, p, NA, 
+					                    C50Evaluation(features)$overall[[1]]))
+				  }
+				  else if (chunk == 3) {
+					  selected <- shapeletsSelection(sampled, no.features, "in.class.transitions")
+					  features <- shapeletsToFeatures(selected, train, test)
+					  
+					  no.selected <- dim(selected)[1]
+					  rbind(dfPrototype("SVM", "in.class.transitions", k, no.selected, p, NA, 
+					                    SVMEvaluation(features)$overall[[1]]),
+					        dfPrototype("Random Forest", "in.class.transitions", k, no.selected, p, 5 * dim(train)[1], 
+					                    RFEvaluation(features)$overall[[1]]),
+					        dfPrototype("Nearest Neighbour", "in.class.transitions", k, no.selected, p, NA, 
+					                    NNEvaluation(features)$overall[[1]]),
+					        dfPrototype("C5.0 Decision Tree", "in.class.transitions", k, no.selected, p, NA, 
+					                    C50Evaluation(features)$overall[[1]]))
+				  }
+			  }
+			  df <- rbind(df, tmp)
+		  }
+		}
+	}
+	registerDoSEQ()
+	
+	df
+}
+```
+
+## Classification Process
+
+In order to classify a dataset and obtain its accuracy by using the shapelet transform we followed these steps:
+
+1. Extract a set of subsequences from the train set. The extraction can be:
+    * Exhaustive search (full set): all of the subsequences are extracted. In the literature the minimum length of a subsequence to be a shapelet is 3, and its maximum is the length of the time series itself (M).
+    * Extraction of a specific length range: only the subsequences with a minimum length of min and a maximum length of max are extracted ([min, max]). An exhaustive search can be seem as an extraction of the subsequences within the length range of [3, M].
+    * Random sampling: of the full set of subsequences, only a percentage of them are selected (with equal probability).
+2. Computation of the quality measures to each subsequence (using only the train set), thus becoming a shapelet.
+3. Selection of the K best shapelets, as the use of every shapelet can cause overfitting.
+    * For this task we used the same algorithm as @Hills:2013dk. Initially the shapelets are sorted in descending order of their quality, then a shapelet is selected as long as it does not have any overlapping with any shapelet already selected. This is done to prevent redudant shapelets, as shapelets that come from the same time series and have some overlapping are likely to be redudant.
+4. Compute the shapelet transform of the train and test set using the selected K shapelets.
+    * For each time series on the train and test set its distance is measured to each of the K shapelets. So a distance matrix of each shapelet to each time series is created.
+5. Induction of the model over the shapelet transform of the train set.
+6. Classification of the test set by applying the model over the shapelet transform of the test set.
+
+For comparison purposes we also computed the accuracy of the 1-NN (with the simple euclidean distance) without obtaining the shapelet transform.
+
+## Implementation Details
+
+There are two implementation details that are noteworth. The first one is a problem we encountered when implementing the algorithm to select the K best shapelets of a given set, and we call it **bias of the computation order of the shapelets**. This problem arises when the shapelets have an equal value of quality and the sorting algorithm is stable or it works in a deterministic way (for example, if one is using quicksort, then how is the pivot selected?). On theses cases the order into which one extracts the shapelets affects the final result. To avoid this problem whenever we sample a set of time series or shapelets we first shuffle it. We note that even though it seems to be less likely to have equal values when using f-statistic, it happened in our experiments (in-class transitions is an integer-valued quality measure, and information gain has clear levels of entropy).
+
+The second implementaton detail has to do with determining the number K of shaplets to be chosen. The work of @Hills:2013dk defined K as half of the length of the time series (M/2), as the more costly apporach of determining K by a 5-fold process didn't show much improvement [@Lines:2012jm]. However, we belive that to compare many datasets at certain amounts of features (shapelets) one needs to take into account the amount of classes that the dataset has, because, intuitively, to classify a dataset of C classes one would need at least C features. So we **defined K as a constant K' multiplied by C. To define K', the amount of features per amount of classes, we simply evaluated it at different levels**, as our first experiment will show. 
+
+# Evaluation of the Quality Measures
+
+On this section we fulfill our first two goals: to evaluate the accuracy of complex and simple classifiers over the shapelet transform using all of the possible shapelets; and to evaluate how the different quality measures affects the accuracy.
+
+```{r "Accuracy evaluation of the quality measures", cache=TRUE}
+set.seed(28322)
+for (i in 1:length(dataSetsProcessed)) {
+	train <- readDataSet(dataSetsProcessed[[i]]$path.train)
+	test <- readDataSet(dataSetsProcessed[[i]]$path.test)
+	
+	dataSetsProcessed[[i]]$accuracy.baseline <- NN1Evaluation(train, test)$overall[[1]]
+	dataSetsProcessed[[i]]$accuracy <- evaluateAccuracy(dataSetsProcessed[[i]]$shapelets, 
+	                                                    train, 
+	                                                    test,
+	                                                    dataSetsProcessed[[i]]$no.classes,
+	                                                    seq(from = 2, to = 36, by = 2),
+	                                                    1.0)
+}
+```
+
+```{r, cache=TRUE}
+accuracy.results <- ldply(.data = dataSetsProcessed, .fun = function(x) {y <- x$accuracy; y$name <- x$name; y})
+```
+
+```{r}
+mean.accuracy <- aggregate(formula = accuracy ~ classifier + k.features + quality.measurement,
+                           data = accuracy.results,
+                           FUN = mean)
+```
+
+The plot below shows the average accuracy over all of the datasets with K' between 2 and 36 (with a step of 2). Each dataset had its accuracy measured 10 times. From this plot one can observe that the quality measure of f-statistic seems to perform poorly, with the in-class transitions and information gain tied at first as the ones with the best accuracy. However, such an analysis over the average accuracy can be misleading, so we focus our attention at defining a reasonable K' for our future experiments, as running every experiment at all of these levels is too time consuming. At K' = 28 one can note that all of the quality measures have had most of their gains in terms of accuracy, thus, unless specified, all of our **following experiments will have K' (amount of features per amount of classes) fixed at 28**.
+
+```{r, echo=FALSE, fig.width=10}
+mean.accuracy$classifier <- factor(mean.accuracy$classifier, levels = rev(levels(mean.accuracy$classifier)))
+ggplot(data = mean.accuracy,
+       aes(x = k.features, y = accuracy, color = quality.measurement, shape = quality.measurement)) +
+  facet_grid(. ~ classifier) + 
+  geom_line() + 
+  geom_vline(xintercept = 28, linetype = "longdash") +
+  geom_point(size = 3) + 
+  labs(x = "Number of Features per amount of Classes", 
+       y = "Average of Accuracy over all data sets") +
+  theme_ssqm() +
+  theme(legend.position = "bottom") + 
+  scale_shape_discrete(name = "Quality Measure:", breaks = c("information.gain", "in.class.transitions", "f.statistic"), labels = c("Information Gain", "In-Class Transitions", "F-Statistic")) + scale_color_discrete(name = "Quality Measure:", breaks = c("information.gain", "in.class.transitions", "f.statistic"), labels = c("Information Gain", "In-Class Transitions", "F-Statistic"))
+```
+
+```{r}
+computeRank <- function(data) {
+  data <- aggregate(formula = accuracy ~ name + percentage + k.features + quality.measurement,
+                    data = data,
+                    FUN = mean)
+  
+  # computes the average for each of the quality measurements per amount of features and data set
+  data$rank <- with(data, ave(accuracy, k.features, name, 
+                              FUN = function(x) rank(-x, ties.method = "average")))
+  # computes the mean average rank per quality measurements and amount of features
+  dfRank <- aggregate(formula = rank ~ k.features + quality.measurement, data = data, FUN = mean)
+  
+  dfRank
+}
+```
+
+```{r}
+average.rank <- ldply(by(data = accuracy.results, accuracy.results$classifier, FUN = computeRank), .id = "classifier")
+```
+
+With the same data used to create the plot above we decided to compute the average rank of the accuracies of the quality measures for every dataset and then average it at every level of K'. As the average rank tells if a quality measure had the best, second best or worst accuracy it is an ideal function to analyze the accuracy performance of the quality measures. From this plot one can see that **on average f-statistic has the worst accuracy, and when few attributes are used the in-class transitions has a clear advantage over the others quality measures, but as more attributes are added then information gain becomes a competitive quality measure**.
+
+```{r, echo=FALSE, fig.width=10}
+ggplot(data = average.rank, 
+       aes(x = k.features, y = rank, color = quality.measurement, shape = quality.measurement)) + 
+  facet_grid(. ~ classifier, labeller = labeller(quality.measurement = quality_label)) + 
+  geom_line() + 
+  geom_point(size = 3) + 
+  labs(x = "Number of Features per amount of Classes", 
+       y = "Mean of the Average Rank over all datasets") +
+  theme_ssqm() +
+  theme(legend.position = "bottom") + 
+  scale_shape_discrete(name = "Quality Measure:", breaks = c("information.gain", "in.class.transitions", "f.statistic"), labels = c("Information Gain", "In-Class Transitions", "F-Statistic")) + scale_color_discrete(name = "Quality Measure:", breaks = c("information.gain", "in.class.transitions", "f.statistic"), labels = c("Information Gain", "In-Class Transitions", "F-Statistic"))
+```
+
+If one were to analyze only the results of the C5.0 Decision-Tree ignoring the in-class transitions then one would reach the same conclusion as @Hills:2013dk, that found that even though f-statistic had better accuracy it was not with statistical significance (assuming that the accuracy of the shapelet decision-tree and a decision-tree over the shapelet transform is equivalent, as their experiment was not over the shapelet transform). However, when one analyzes over all of the 4 classifiers it is clear that information gain is better than the f-statistic in terms of accuracy, thus contradicting the findings of @Hills:2013dk that even recommended it to be the default quality measure. **More than contradicting a previous finding, it shows that results over the decision-tree may not generalize**. Besides that, as noted, our proposed quality measure does no worse and when few features are used than it has a clear advantage over the others.
+
+# Evaluation of the Search-Space Reduction Techniques
+
+This section is dedicated to our third goal, of evaluating techniques of search-space reduction, namely the use of Random Sampling as proposed by @Renard:2015wv; the exploration of only a given range of the shapelets length, as proposed by @Hills:2013dk; and the evaluation of how these techniques affects the accuracy in comparison to when the full set of shapelets is used.
+
+## Random Sampling
+
+We start this section by evaluating the technique of Random Sampling, as proposed by @Renard:2015wv. We aim not only to evaluate its accuracy over the shapelet transform, but to know how the accuracy is affected at different levels of sampling. For the sampling levels we chose the following percentages: 0.05\%, 0.1\%, 0.5\%, 1\%, 2.5\%, 5\%, 10\%, 25\% and 100\% (no sampling, baseline). For each dataset we computed its accuracy 10 times, and as defined by our previous experiment, we set K' = 28.
+
+```{r "Accuracy evaluation of Random Sampling", cache=TRUE}
+set.seed(5498346)
+for (i in 1:length(dataSetsProcessed)) {
+	train <- readDataSet(dataSetsProcessed[[i]]$path.train)
+	test <- readDataSet(dataSetsProcessed[[i]]$path.test)
+	
+	dataSetsProcessed[[i]]$sampling.accuracy <- evaluateAccuracy(dataSetsProcessed[[i]]$shapelets,
+	                                                             train,
+	                                                             test,
+	                                                             dataSetsProcessed[[i]]$no.classes,
+	                                                             28,
+	                                                             c(0.0005, 0.001, 0.005, 0.01, 
+	                                                               0.025, 0.05, 0.1, 0.25, 1))
+}
+```
+
+```{r, cache=TRUE}
+sampling.results <- ldply(.data = dataSetsProcessed, 
+                          .fun = function(x) {y <- x$sampling.accuracy; y$name <- x$name; y$percentage <- as.factor(y$percentage * 100); y})
+```
+
+```{r}
+sampling.accuracy <- aggregate(formula = accuracy ~ name + percentage + quality.measurement + classifier,
+                               data = sampling.results,
+                               FUN = mean)
+```
+
+Below we plot the mean accuracy of the 10 runs for each dataset together with a boxplot to display the overall variance and median of the accuracy. As it shows, **sampling, even at low levels such as 0.05\%, does not degrade the accuracy in a meangingful way**. Thus, being a great technique to achieve great speed-ups without compromising in accuracy. **Moreover, we note that sampling tends slightly decrease the variance and to slightly increase the accuracy. We believe that this improvement on the accuracy is caused because random sampling forces greater divertsity of the features by removing shapelets that represents the same pattern from different time series**.
+
+```{r, echo=FALSE, fig.width=10, fig.height=12}
+ggplot(data = sampling.accuracy, aes(x = percentage, y = accuracy, fill = quality.measurement, shape = quality.measurement)) + 
+  facet_grid(classifier ~ quality.measurement, labeller = labeller(quality.measurement = quality_label)) + 
+  geom_boxplot(outlier.size = 0, aes(color = quality.measurement)) +
+  stat_summary(geom = "crossbar", width = 0.6, fatten = 2, color="white", 
+               fun.data = function(x){ return(c(y = median(x), ymin = median(x), ymax = median(x))) }) +
+  geom_point(aes(shape = quality.measurement), position = position_jitter(width = 0.2), alpha = 0.3, size = 2) +
+  coord_cartesian(ylim = c(0.5, 1.02)) +
+  labs(x = "% Sampled", y = "Accuracy of all Data Sets", shape = "Quality Measure:", fill = "Quality Measure:") +
+  theme_ssqm() +
+  theme(legend.position = "none")
+```
+
+As with our decision to fix K' at 28 in order to run our experiments in a reasonable amount of time, **for our following experiments we also fixed the sampling level at 5\%, as we believe this level is a good tradeoff between accuracy and speedup**.
+
+## Exploration of a specific length range of the shapelets
+
+On this subsection we will evaluate the technique of reducing the search-space by exploring only the shapelets that that have a certain length. On this technique an algorithm is executed to set the parameters min and max that define a length range ([min, max]) from which all of the shapelets are extracted. This technique was introduced by @Hills:2013dk and below we detail their algorithm to set min and max:
+
+1. Select randomly 10 time series of the train set;
+2. From these 10 time series extract every shapelet possible;
+3. From all of the shapelets extracted, select the 10 best and store them;
+4. Go back to step 1 and repeat it 10 times, thus collecting 100 shapelets;
+5. Order the 100 shapelets by length and set Min to the length of the 25th shapelet and Max to the length of the 75th shapelet.
+
+We note that at step 1 we ensure that those randomly selected 10 time series contains time series from at least 2 classes (this check was not present in the original algorithm).
+
+```{r}
+estimateMinMax <- function(train) {
+	bestShapelets <- list()
+	bestShapelets$information.gain <- data.frame()
+	bestShapelets$f.statistic <- data.frame()
+	bestShapelets$in.class.transitions <- data.frame()
+
+	for (r in 1:10) {
+		repeat {
+		  subset <- train[sample(1:dim(train)[1], size = 10, replace = FALSE), ]
+		  subset$class <- droplevels(subset$class)
+		  
+		  # ensures that there are time series of at least two classes
+		  if (length(levels(subset$class)) >= 2) {
+		    break
+		  }
+		}
+		shapelets <- computeShapelets(subset)
+		# shuffle the shapelets
+		shapelets <- shapelets[sample(1:dim(shapelets)[1], replace = FALSE), ]
+		
+		bestShapelets$information.gain <- rbind(bestShapelets$information.gain,
+		                                        shapeletsSelection(shapelets, 10, "information.gain"))
+		bestShapelets$f.statistic <- rbind(bestShapelets$f.statistic,
+		                                   shapeletsSelection(shapelets, 10, "f.statistic"))
+		bestShapelets$in.class.transitions <- rbind(bestShapelets$in.class.transitions,
+		                                            shapeletsSelection(shapelets, 10, "in.class.transitions"))
+	}
+
+	df <- data.frame("quality.measurement" = c("information.gain", "f.statistic", "in.class.transitions"),
+	                 "min" = numeric(3),
+	                 "max" = numeric(3))
+	
+	df[1, 2:3] <- sort(bestShapelets$information.gain$length)[c(25, 75)]
+	df[2, 2:3] <- sort(bestShapelets$f.statistic$length)[c(25, 75)]
+	df[3, 2:3] <- sort(bestShapelets$in.class.transitions$length)[c(25, 75)]
+	df
+}
+```
+
+```{r}
+minMaxLoop <- function(dataSets, timed = FALSE) {
+  minMaxDF <- data.frame()
+  for (i in 1:dim(dataSets)[1]) {
+    time <- NA
+    train <- readDataSet(dataSets$path.train[i])
+    
+    if (timed) {
+      bench <- benchmark(df <- estimateMinMax(train), replications = 1)
+      time <- bench$elapsed
+    }
+    else {
+      df <- estimateMinMax(train)
+    }
+    
+    df$name <- dataSets$name[i]
+    df$time <- time
+    
+    minMaxDF <- rbind(minMaxDF, df)
+  }
+  minMaxDF
+}
+```
+
+### Time Evaluation
+
+By looking at the algorithm one would expect it to be costly, as it extracts and evaluates all of the shapelets of 10 time series for 10 times. This is not equivalent to extracting and evaluating all of the shaplets from 100 time series because the evaluation of the quality measure is confined to 10 time series at a time. Nonetheless, it should stil be expensive, so with the following experiment we try to answer this question: **is it better to go ahead and extract and evaluate all of the shapelets in the train set or to run this estimation process?**
+
+```{r "Estimation of the min/max parameters (timed run)", cache=TRUE}
+set.seed(3483)
+timed.run <- minMaxLoop(dataSets, TRUE)
+```
+
+```{r}
+total.timed <- ldply(.data = dataSetsProcessed,
+                     .fun = function(x) { y <- data.frame("name" = x$name,
+                                                          "no.train" = x$no.train,
+                                                          "length" = x$length,
+                                                          "time.exhaustive" = x$time); y})
+
+time.comparison <- merge(total.timed, aggregate(formula = time ~ name, data = timed.run, FUN = mean), 
+                         by = c("name"))
+```
+
+To answer this question we stored the time that it took to extract and evaluate all of the shapelets per dataset and compared it to the time it takes to run the estimation process per dataset. **As the table below shows, under our implementation, the estimation process breaks even at a dataset with about 30 time series** (the datasets CBF and Beef have both 30 time series but of vastly different lengths). However, after executing this estimation process one would still need to extract and evaluate all of the shapelets from the given length range!
+
+```{r, echo=FALSE}
+time.comparison$ratio <- with(time.comparison, round(time / time.exhaustive, digits = 3))
+kable(xtable(time.comparison[order(time.comparison$no.train, time.comparison$length), ]), 
+      format = "pandoc", row.names = FALSE,
+      caption = "Time Analysis: One can observe from this table that the algorithm to estimte the min and max parameter 
+                  is roughly equivalent to computing all shapelets in a train set of 30 time series.",
+      col.names = c("Data Set Name", "No. train", "Length", "Time to compute all shapelets (s)", "Estimation Time (s)", "Time Ratio"))
+```
+
+```{r, echo=FALSE}
+df <- merge(timed.run, dataSetsDescription, by = c("name"))
+for (i in 1:dim(df)[1]) {
+  df$percentage[i] <- 100 * sum(df$length[i] - (df$min[i]:df$max[i]) + 1) * df$no.train[i] / df$no.shapelets[i]
+}
+stats <- tapply(df$percentage, df$quality.measurement, FUN = function(x) { tidy(summary(x)) })
+```
+
+**To evaluate how much more time one would need to classify a dataset using the estimation process we computed the percentage of the shapelets that are within the given length range per dataset**. We then summarized this information into the quantiles show below. **Keep in mind that for random sampling we recommended the extraction and evaluation of only 5\% of the shapelets**, and the execution of random sampling is just a matter a of generating random numbers.
+
+Execution of the Min/Max Estimation process with the quality measure of Information Gain:
+
+```{r, echo=FALSE}
+kable(xtable(stats$information.gain, digits = 4), format = "pandoc",
+      caption = "Percentage of Shapelets to be computed when Information Gain is used.", row.names = FALSE)
+```
+
+Execution of the Min/Max Estimation process with the quality measure of F-Statistic:
+
+```{r, echo=FALSE}
+kable(xtable(stats$f.statistic, digits = 4), format = "pandoc",
+      caption = "Percentage of Shapelets to be computed when F-Statistic is used.", row.names = FALSE)
+```
+
+Execution of the Min/Max Estimation process with the quality measure of In-Class Transitions:
+
+```{r, echo=FALSE}
+kable(xtable(stats$in.class.transitions, digits = 4), format = "pandoc",
+      caption = "Percentage of Shapelets to be computed when In-Class Transitions is used.", row.names = FALSE)
+```
+
+### Accuracy Evaluation
+
+As we have shown that executing the estimation process is costly, we are left to investigate if this costly process paysoff with a better accuracy than random sampling (which has a similar accuracy to not sampling at all). Also, due to its costly nature the following experiment had only 5 runs per dataset instead of the usual 10. Again, we remember that K' is set at 28 and random sampling was done at a level of 5\%.
+
+```{r "Estimation of the min/max parameters for accuracy comparisons", cache=TRUE}
+set.seed(43739)
+accuracy.run <- c()
+for (i in 1:5) {
+  accuracy.run <- rbind(accuracy.run, minMaxLoop(dataSets, FALSE))
+}
+```
+
+```{r, echo=FALSE}
+sampling.comparison <- rbind(accuracy.run, accuracy.run, accuracy.run, accuracy.run)
+sampling.comparison$classifier <- rep(c("SVM", "Random Forest", "Nearest Neighbour", "C5.0 Decision Tree"), each = dim(accuracy.run)[1])
+sampling.comparison$accuracy.random <- 0.0
+sampling.comparison$accuracy.minmax <- 0.0
+sampling.comparison$multiclass <- ""
+```
+
+```{r "Accuracy comparison of the Sampling Techniques", cache=TRUE}
+set.seed(9869)
+
+for (name in unique(sampling.comparison$name)) {
+  idx.name <- which(dataSets$name == name)
+  indexes <- which(sampling.comparison$name == name)
+  
+  train <- readDataSet(dataSets$path.train[idx.name])
+  test <- readDataSet(dataSets$path.test[idx.name])
+  no.classes <- dataSetsProcessed[[idx.name]]$no.classes
+  shapelets <- dataSetsProcessed[[idx.name]]$shapelets
+  
+  for (i in indexes) {
+    shapelets.range <- subset(shapelets, 
+                              shapelets$length >= sampling.comparison$min[i] & shapelets$length <= sampling.comparison$max[i])
+    shapelets.range <- shapelets.range[sample(1:dim(shapelets.range)[1], replace = FALSE), ]
+    selected.range <- shapeletsSelection(shapelets.range, 28 * no.classes, sampling.comparison$quality.measurement[i])
+    features.range <- shapeletsToFeatures(selected.range, train, test)
+    
+    shapelets.sampled <- shapelets[sample(1:dim(shapelets)[1], 
+                                          size = 0.05 * dim(shapelets)[1], replace = FALSE), ]
+    selected.sampled <- shapeletsSelection(shapelets.sampled, 28 * no.classes, sampling.comparison$quality.measurement[i])
+    features.sampled <- shapeletsToFeatures(selected.sampled, train, test)
+    
+    if (sampling.comparison$classifier[i] == "SVM") {
+      sampling.comparison$accuracy.random[i] <- SVMEvaluation(features.sampled)$overall[[1]]
+      sampling.comparison$accuracy.minmax[i] <- SVMEvaluation(features.range)$overall[[1]]
+    }
+    else if (sampling.comparison$classifier[i] == "Random Forest") {
+      sampling.comparison$accuracy.random[i] <- RFEvaluation(features.sampled)$overall[[1]]
+      sampling.comparison$accuracy.minmax[i] <- RFEvaluation(features.range)$overall[[1]]
+    }
+    else if (sampling.comparison$classifier[i] == "Nearest Neighbour") {
+      sampling.comparison$accuracy.random[i] <- NNEvaluation(features.sampled)$overall[[1]]
+      sampling.comparison$accuracy.minmax[i] <- NNEvaluation(features.range)$overall[[1]]
+    }
+    else if (sampling.comparison$classifier[i] == "C5.0 Decision Tree") {
+      sampling.comparison$accuracy.random[i] <- C50Evaluation(features.sampled)$overall[[1]]
+      sampling.comparison$accuracy.minmax[i] <- C50Evaluation(features.range)$overall[[1]]
+    }
+    
+    if (no.classes == 2) sampling.comparison$multiclass[i] <- "2 Classes"
+    else sampling.comparison$multiclass[i] <- "Multiple Classes"
+  }
+}
+```
+
+```{r}
+sampling.comparison <- aggregate(formula = cbind(accuracy.minmax, accuracy.random) ~ name + classifier + quality.measurement + multiclass,
+                                 data = sampling.comparison, FUN = mean)
+```
+
+```{r}
+longdf <- gather(sampling.comparison, method, accuracy, accuracy.minmax:accuracy.random)
+friedman.values <- by(longdf,
+                      longdf[,c("quality.measurement", "classifier")],
+                      function(x) round(friedman.test(y = x$accuracy, groups = x$method, block = x$name)$p.value, 4))
+friedman.values <- as.data.frame(melt(matrix(data = as.numeric(friedman.values), 
+                                             nrow = 3, 
+                                             ncol = 4, 
+                                             dimnames = attr(friedman.values, which = "dimnames"))))
+friedman.values$value <- paste("p-value: ", friedman.values$value, sep = "")
+```
+
+Each point below is the mean accuracy of 5 runs per dataset when one uses random sampling compared to when one uses of estimation min/max. We also annotated each plot with the p-value of the Friedman test. **From the plots it is clear that when one uses random sampling its accuracy is equivalent to when one uses the process of estimation of min/max, with the exeception being to when one is also using the quality measure of f-statistic, then random sampling promotes greater accuracy**.
+
+```{r, fig.width=10, fig.height=8, echo=FALSE}
+ggplot(data = sampling.comparison, aes(x = accuracy.minmax, y = accuracy.random)) +
+  facet_grid(quality.measurement ~ classifier, labeller = labeller(quality.measurement = quality_label)) +
+  geom_polygon(data = data.frame(x = c(0.0, 1.0, 1.0), y = c(0.0, 1.0, 0.0)), aes(x, y), fill = "orange", alpha = 0.3) +
+  geom_point(size = 2, alpha = 0.6, aes(shape = multiclass)) + scale_shape_manual(values = c(16, 3)) +
+  coord_cartesian(ylim = c(0.2, 1), xlim = c(0.2, 1)) +
+  geom_text(data = friedman.values, aes(label = value), x = 0.22, y = 0.92, fontface = 3, size = 3, hjust = 0) +
+  geom_text(data = data.frame(accuracy.minmax = 0.43, accuracy.random = 0.3, classifier = "SVM", quality.measurement = "information.gain"), label = "In this area\nrandom sampling is worse", fontface = 3, size = 3, hjust = 0) +
+  labs(x = "Accuracy with Min/Max Estimation", y = "Accuracy with Random Sampling", shape = "Amount of Classes:") +
+  theme_ssqm() +
+  theme(legend.position = "bottom")
+```
+
+# Length Inspection by using Random Sampling
+
+We have show that even when one samples at a low level such as 0.05\% one can still obtain a good accurcy. Moreover, random sampling is not costly, as it is just a matter of generating random numbers. Given this, we decided to employ random sampling to get further insight into the dataset by finding which lengths of shapelets are the most promising ones to contain a pattern that can be useful for classification or to understand the data.
+
+The idea is that if a dataset has a pattern with a specific length, then the shapelet transform with these shapelets would have a good accuracy. On the other hand, if one built a shapelet transform of shapelets with length greater than the pattern's length then there would be a decrease in accuracy due to the additional noise; and a decrease in accuracy is also expected if one uses shapelets with length smaller than the pattern's length, because they would not encompass the whole pattern.
+
+With these in mind, we propose to random sample a few shapelets (at most 200) and induce a classifier at every possible length. So if a dataset has one pattern, then we expect the plot to contain one peak; and if it has two patterns then we expect it to have two peaks, and so on.
+
+```{r "Length Inspection", cache=TRUE}
+set.seed(348)
+
+for (i in 1:length(dataSetsProcessed)) {
+	train <- readDataSet(dataSetsProcessed[[i]]$path.train)
+	test <- readDataSet(dataSetsProcessed[[i]]$path.test)
+	
+	registerDoParallel(cores = 4)
+	length.accuracy <- c()
+	for (j in 3:dataSetsProcessed[[i]]$length) {
+	  shapelets <- dataSetsProcessed[[i]]$shapelets[dataSetsProcessed[[i]]$shapelets$length == j, ]
+		shapelets <- shapelets[sample(1:dim(shapelets)[1] , size = min(200, dim(shapelets)[1]), replace = FALSE), ]
+		features <- shapeletsToFeatures(shapelets, train, test)
+		
+		tmp <- foreach(chunk = 1:4, .combine = rbind, .inorder = TRUE) %dopar% {
+		  if (chunk == 1) {
+		    data.frame("classifier" = "SVM", "accuracy" = SVMEvaluation(features)$overall[[1]])
+		  }
+		  else if (chunk == 2) {
+		    data.frame("classifier" = "Random Forest", "accuracy" = RFEvaluation(features)$overall[[1]])
+		  }
+		  else if (chunk == 3) {
+		    data.frame("classifier" = "Nearest Neighbour", "accuracy" = NNEvaluation(features)$overall[[1]])
+		  }
+		  else if (chunk == 4) {
+		    data.frame("classifier" = "C5.0 Decision Tree", "accuracy" = C50Evaluation(features)$overall[[1]])
+		  }
+		}
+		tmp$length <- j
+		length.accuracy <- rbind(length.accuracy, tmp)
+	}
+	registerDoSEQ()
+	
+	length.accuracy$name <- dataSetsProcessed[[i]]$name
+	dataSetsProcessed[[i]]$length.accuracy <- length.accuracy
+}
+```
+
+```{r}
+length.inspection <- ldply(.data = dataSetsProcessed, .fun = function(x) {y <- x$length.accuracy; y})
+
+baseline <- ldply(.data = dataSetsProcessed, .fun = function(x) {y <- data.frame("accuracy.baseline" = x$accuracy.baseline,
+                                                                                 "name" = x$name); y})
+```
+
+```{r, echo=FALSE}
+estimation.range <- subset(merge(timed.run, dataSetsDescription, by = c("name")), quality.measurement == "information.gain")
+estimation.range$fill <- "orange"
+```
+
+The plot below shows for each dataset how the accuracy changes along the length of the shapelets being inspected. We note that the accuracy lines were smoothed (LOESS). For each dataset we also plotted the baseline accuracy of the 1-Nearest Neighbour on the original domain (without shapelet transform); we also plotted the length range given by the estimation of the min/max parameters (using information gain as the quality measure).
+
+```{r, echo=FALSE, fig.width=10, fig.height=14}
+ggplot(data = length.inspection, aes(x = length, y = accuracy, color = classifier)) + 
+  facet_wrap( ~ name, scales = "free", ncol = 4) + 
+  geom_rect(data = estimation.range, inherit.aes = FALSE, aes(xmin = min, xmax = max, ymin = -Inf, ymax = Inf, group = name, fill = fill), alpha = 0.3) +
+  scale_fill_manual("", label = "Estimated length range (min/max interval)", values = "orange") +
+  geom_hline(data = baseline, aes(yintercept = accuracy.baseline), linetype = "longdash") +
+  geom_smooth(size = 1.2, method = "loess") +
+  geom_text(data = data.frame("length" = 5, "accuracy" = 0.82, "name" = "ArrowHead", "classifier" = "SVM"), label = "1NN baseline accuracy", fontface = 3, size = 3, hjust = 0, color = "black") +
+  labs(x = "Length", y = "Accuracy", color = "Classifier") + 
+  theme_ssqm() + 
+  theme(legend.position = "top")
+```
+
+From this plot there are some interesting observations:
+
+* 1-NN is competitive, and sometimes better, when the accuracy peaks at the end, suggesting that there are no local patterns but only one global pattern (as big as the time series itself).
+* The length range given by the estimation algorithm in many cases does not align with the peak of the accuracy. Although we note that the smoothing function may slightly dislocate the peak.
+* Most of the datasets seem to have only one peak. Although some have a long plateau, which could indicate multiple patterns that are not too far apart to have a valley in between them. However, the dataset BeetleFly has two clear peaks, which will be explored on the next section.
+
+## BeetleFly dataset
+
+Here we retrieve the best shapelet (according to the information gain) from the two peaks, one of length 30 and another of length 307 (show in bold). The colors indicates the class to which the time series belongs (the dataset has 2 classes).
+
+```{r, echo=FALSE, fig.width=10, fig.height=8}
+i = 28
+
+train <- readDataSet(dataSets$path.train[i])
+test <- readDataSet(dataSets$path.test[i])
+
+shapelets <- dataSetsProcessed[[i]]$shapelets
+
+sub <- subset(shapelets, shapelets$length >= 30 & shapelets$length <= 70)
+peak1 <- sub[which.max(sub$information.gain), ]
+sub <- subset(shapelets, shapelets$length >= 280 & shapelets$length <= 350)
+peak2 <- sub[which.max(sub$information.gain), ]
+
+timeseries <- gather(train, time, value, 2:513)
+timeseries$time <- as.numeric(timeseries$time)
+timeseries$id <- as.factor(timeseries$id)
+set.seed(12348)
+partition <- subset(timeseries, timeseries$id %in% createDataPartition(train$class, p = 0.6)[[1]])
+
+highlight <- subset(partition, partition$id == peak1$time.series.id & partition$time >= peak1$begin & partition$time <= peak1$end)
+highlight <- rbind(highlight, 
+                   subset(partition, partition$id == peak2$time.series.id & partition$time >= peak2$begin & partition$time <= peak2$end))
+
+ggplot(data = partition, aes(x = time, y = value, group = id, color = class)) + 
+  geom_line(alpha = 0.8) +
+  geom_line(data = highlight, aes(x = time, y = value, group = id, color = class), size = 1.3) + 
+  facet_wrap( ~ id, ncol = 2) + 
+  labs(x = "Time", y = "") + 
+  theme_ssqm() + 
+  theme(legend.position = "none", strip.text.x = element_blank())
+```
+
+# Execution Details
+
+In order to show our commitment to the full repeatability of our experiments we detail below the environment on which they were run.
+
+All of our experiments were run on a MacBookPro 2,3GHz Intel Core i7 of 4 cores (Late 2013) with 16GB of RAM. Due to the intensive nature of the process of extraction and evaluation of the shaplets we decided to code this part in C++ with the help of the package RcppParallel (https://CRAN.R-project.org/package=RcppParallel), which not only allowed us to call C++ code from within R but to also parallelize it over the number of cores that a computer has. Details of the OS, R version and the packages used are given below.
+
+```{r, echo=FALSE, cache=TRUE}
+sessionInfo()
+```
+
+# References
