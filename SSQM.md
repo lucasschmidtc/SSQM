@@ -336,7 +336,7 @@ For comparison purposes we also computed the accuracy of the 1-NN (with the simp
 Implementation Details
 ----------------------
 
-There are two implementation details that are noteworth. The first one is a problem we encountered when implementing the algorithm to select the K best shapelets of a given set, and we call it **bias of the computation order of the shapelets**. This problem arises when the shapelets have an equal value of quality and the sorting algorithm is stable or it works in a deterministic way (for example, if one is using quicksort, then how is the pivot selected?). On theses cases the order into which one extracts the shapelets affects the final result. To avoid this problem whenever we sample a set of time series or shapelets we first shuffle it. We note that even though it seems to be less likely to have equal values when using f-statistic, it happened in our experiments (in-class transitions is an integer-valued quality measure, and information gain has clear levels of entropy).
+There are two implementation details that are noteworth. The first one is a problem we encountered when implementing the algorithm to select the K best shapelets of a given set, and we call it **bias of the computation order of the shapelets**. This problem arises when the shapelets have an equal value of quality and the sorting algorithm is stable or it works in a deterministic way (for example, if one is using quicksort, then how is the pivot selected?). On these cases the order which the shapelets are extracted affects the final result. To avoid this problem whenever we sample a set of time series or shapelets we first shuffle it. We note that even though it seems to be less likely to have equal values when using f-statistic it happened in our experiments (in-class transitions is an integer-valued quality measure, and information gain has clear levels of entropy).
 
 The second implementaton detail has to do with determining the number K of shaplets to be chosen. The work of Hills et al. \[2013\] defined K as half of the length of the time series (M/2), as the more costly apporach of determining K by a 5-fold process didn't show much improvement \[Lines et al. 2012\]. However, we belive that to compare many datasets at certain amounts of features (shapelets) one needs to take into account the amount of classes that the dataset has, because, intuitively, to classify a dataset of C classes one would need at least C features. So we **defined K as a constant K' multiplied by C. To define K', the amount of features per amount of classes, we simply evaluated it at different levels**, as our first experiment will show.
 
@@ -399,12 +399,12 @@ With the same data used to create the plot above we decided to compute the avera
 
 ![](SSQM_files/figure-markdown_github/unnamed-chunk-8-1.png)
 
-If one were to analyze only the results of the C5.0 Decision-Tree ignoring the in-class transitions then one would reach the same conclusion as Hills et al. \[2013\], that found that even though f-statistic had better accuracy it was not with statistical significance (assuming that the accuracy of the shapelet decision-tree and a decision-tree over the shapelet transform is equivalent, as their experiment was not over the shapelet transform). However, when one analyzes over all of the 4 classifiers it is clear that information gain is better than the f-statistic in terms of accuracy, thus contradicting the findings of Hills et al. \[2013\] that even recommended it to be the default quality measure. **More than contradicting a previous finding, it shows that results over the decision-tree may not generalize**. Besides that, as noted, our proposed quality measure does no worse and when few features are used than it has a clear advantage over the others.
+If one were to analyze only the results of the C5.0 Decision-Tree ignoring the in-class transitions then one would reach the same conclusion as Hills et al. \[2013\], that found that even though f-statistic had better accuracy it was not with statistical significance (assuming that the accuracy of the shapelet decision-tree and a decision-tree over the shapelet transform is equivalent, as their experiment was not over the shapelet transform). However, when one analyzes over all of the 4 classifiers it is clear that information gain is better than the f-statistic in terms of accuracy, thus contradicting the findings of Hills et al. \[2013\], that even recommended it to be the default quality measure. **More than contradicting a previous finding, it shows that results over the decision-tree may not generalize**. Besides that, as noted, our proposed quality measure does no worse and when few features are used then it has a clear advantage over the others.
 
 Evaluation of the Search-Space Reduction Techniques
 ===================================================
 
-This section is dedicated to our third goal, of evaluating techniques of search-space reduction, namely the use of Random Sampling as proposed by Renard et al. \[2015\]; the exploration of only a given range of the shapelets length, as proposed by Hills et al. \[2013\]; and the evaluation of how these techniques affects the accuracy in comparison to when the full set of shapelets is used.
+This section is dedicated to our third goal, of evaluating techniques of search-space reduction, namely the use of Random Sampling as proposed by Renard et al. \[2015\]; the exploration of the shapelets that have a specific length, as proposed by Hills et al. \[2013\]; and the evaluation of how these techniques affects the accuracy in comparison to when the full set of shapelets is used.
 
 Random Sampling
 ---------------
@@ -447,10 +447,10 @@ As with our decision to fix K' at 28 in order to run our experiments in a reason
 Exploration of a specific length range of the shapelets
 -------------------------------------------------------
 
-On this subsection we will evaluate the technique of reducing the search-space by exploring only the shapelets that that have a certain length. On this technique an algorithm is executed to set the parameters min and max that define a length range (\[min, max\]) from which all of the shapelets are extracted. This technique was introduced by Hills et al. \[2013\] and below we detail their algorithm to set min and max:
+On this subsection we will evaluate the technique of reducing the search-space by exploring only the shapelets that have a certain length. On this technique an algorithm is executed to set the parameters min and max that define a length range (\[min, max\]) from which all of the shapelets are extracted. This technique was introduced by Hills et al. \[2013\] and below we detail their algorithm to set min and max:
 
 1.  Select randomly 10 time series of the train set;
-2.  From these 10 time series extract every shapelet possible;
+2.  From these 10 time series extract every possible shapelet;
 3.  From all of the shapelets extracted, select the 10 best and store them;
 4.  Go back to step 1 and repeat it 10 times, thus collecting 100 shapelets;
 5.  Order the 100 shapelets by length and set Min to the length of the 25th shapelet and Max to the length of the 75th shapelet.
@@ -523,7 +523,7 @@ minMaxLoop <- function(dataSets, timed = FALSE) {
 
 ### Time Evaluation
 
-By looking at the algorithm one would expect it to be costly, as it extracts and evaluates all of the shapelets of 10 time series for 10 times. This is not equivalent to extracting and evaluating all of the shaplets from 100 time series because the evaluation of the quality measure is confined to 10 time series at a time. Nonetheless, it should stil be expensive, so with the following experiment we try to answer this question: **is it better to go ahead and extract and evaluate all of the shapelets in the train set or to run this estimation process?**
+By looking at the algorithm one would expect it to be costly, as it extracts and evaluates all of the shapelets of 10 time series for 10 times. This is not equivalent to extracting and evaluating all of the shaplets from 100 time series because the evaluation of the quality measure is confined to 10 time series at a time. Nonetheless, it should still be expensive, so with the following experiment we try to answer this question: **is it better to go ahead and extract and evaluate all of the shapelets in the train set or to run this estimation process?**
 
 ``` r
 set.seed(3483)
@@ -574,7 +574,7 @@ To answer this question we stored the time that it took to extract and evaluate 
 | MedicalImages                |        381|      99|                           1950.491|               14.502|       0.007|
 | Swedish Leaf                 |        500|     128|                           9026.067|               37.072|       0.004|
 
-**To evaluate how much more time one would need to classify a dataset using the estimation process we computed the percentage of the shapelets that are within the given length range per dataset**. We then summarized this information into the quantiles show below. **Keep in mind that for random sampling we recommended the extraction and evaluation of only 5% of the shapelets**, and the execution of random sampling is just a matter a of generating random numbers.
+**To evaluate how much more time one would need to classify a dataset using the estimation process we computed the percentage of the shapelets that are within the given length range per dataset**. We then summarized this information into the quantiles show below. **Keep in mind that for random sampling we recommended the extraction and evaluation of only 5% of the shapelets**, and the execution of random sampling is just a matter of generating random numbers.
 
 Execution of the Min/Max Estimation process with the quality measure of Information Gain:
 
@@ -670,14 +670,14 @@ friedman.values <- as.data.frame(melt(matrix(data = as.numeric(friedman.values),
 friedman.values$value <- paste("p-value: ", friedman.values$value, sep = "")
 ```
 
-Each point below is the mean accuracy of 5 runs per dataset when one uses random sampling compared to when one uses of estimation min/max. We also annotated each plot with the p-value of the Friedman test. **From the plots it is clear that when one uses random sampling its accuracy is equivalent to when one uses the process of estimation of min/max, with the exeception being to when one is also using the quality measure of f-statistic, then random sampling promotes greater accuracy**.
+Each point below is the mean accuracy of 5 runs per dataset when one uses random sampling compared to when one uses the min/max estimation process. We also annotated each plot with the p-value of the Friedman test. **From the plots it is clear that when one uses random sampling its accuracy is equivalent to when one uses the process of estimation of min/max, with the exception being to when one is also using the quality measure of f-statistic, then random sampling promotes greater accuracy**.
 
 ![](SSQM_files/figure-markdown_github/unnamed-chunk-23-1.png)
 
 Length Inspection by using Random Sampling
 ==========================================
 
-We have show that even when one samples at a low level such as 0.05% one can still obtain a good accurcy. Moreover, random sampling is not costly, as it is just a matter of generating random numbers. Given this, we decided to employ random sampling to get further insight into the dataset by finding which lengths of shapelets are the most promising ones to contain a pattern that can be useful for classification or to understand the data.
+We have show that even when one samples at a low level such as 0.05% one can still obtain a good accuracy. Moreover, random sampling is not costly, as it is just a matter of generating random numbers. Given this, we decided to employ random sampling to get further insight into the dataset by finding which lengths of shapelets are the most promising ones to contain a pattern that can be useful for classification or to understand the data.
 
 The idea is that if a dataset has a pattern with a specific length, then the shapelet transform with these shapelets would have a good accuracy. On the other hand, if one built a shapelet transform of shapelets with length greater than the pattern's length then there would be a decrease in accuracy due to the additional noise; and a decrease in accuracy is also expected if one uses shapelets with length smaller than the pattern's length, because they would not encompass the whole pattern.
 
@@ -735,7 +735,7 @@ The plot below shows for each dataset how the accuracy changes along the length 
 From this plot there are some interesting observations:
 
 -   1-NN is competitive, and sometimes better, when the accuracy peaks at the end, suggesting that there are no local patterns but only one global pattern (as big as the time series itself).
--   The length range given by the estimation algorithm in many cases does not align with the peak of the accuracy. Although we note that the smoothing function may slightly dislocate the peak.
+-   The length range given by the estimation algorithm in many cases does not align with the peak of the accuracy. Although we note that the smoothing function may slightly displace the peak.
 -   Most of the datasets seem to have only one peak. Although some have a long plateau, which could indicate multiple patterns that are not too far apart to have a valley in between them. However, the dataset BeetleFly has two clear peaks, which will be explored on the next section.
 
 BeetleFly dataset
