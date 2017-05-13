@@ -19,6 +19,7 @@ December, 2016
 -   [Length Inspection by using Random Sampling](#length-inspection-by-using-random-sampling)
     -   [BeetleFly dataset](#beetlefly-dataset)
 -   [Execution Details](#execution-details)
+-   [Acknowledgements](#acknowledgements)
 -   [References](#references)
 
 ``` r
@@ -790,6 +791,11 @@ All of our experiments were run on a MacBookPro 2,3GHz Intel Core i7 of 4 cores 
     ## [40] car_2.1-3          MASS_7.3-45        Matrix_1.2-7.1    
     ## [43] assertthat_0.1     minqa_1.2.4        rmarkdown_1.1     
     ## [46] R6_2.2.0           nnet_7.3-12        nlme_3.1-128
+
+Acknowledgements
+================
+
+My Master's work was funded by Fundacao de Amparo a Pesquisa do Estado de Sao Paulo (FAPESP - 2013/16164-2). The dissertation is available at the [Universidade de Sao Paulo's Digital Library](http://www.teses.usp.br/teses/disponiveis/55/55134/tde-07112016-162458/pt-br.php).
 
 References
 ==========

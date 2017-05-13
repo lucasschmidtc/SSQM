@@ -1,0 +1,604 @@
+models.comparison
+models.comparison$multiclass <- as.factor(models.comparison$multiclass)
+models.comparison
+models.comparison$multiclass <- as.factor(models.comparison$multiclass)
+triangle <- data.frame(x = c(0.0, 1.0, 1.0), y = c(0.0, 1.0, 0.0))#
+#
+ggplot(data = models.comparison, aes(x = accuracy.current, y = accuracy.proposed, shape = multiclass)) +#
+  coord_cartesian(ylim = c(0.2, 1.03), xlim = c(0.2, 1.03)) +#
+  geom_polygon(data = triangle, aes(x = x, y = y), fill = "red", alpha = 0.15) +#
+  geom_point(size = 1) +#
+  facet_grid(quality.measurement ~ classifier, labeller = labeller(quality.measurement = quality_label)) +#
+  labs(x = "Accuracy with Min/Max Estimation", y = "Accuracy with Random Sampling") +#
+  #annotate("text", label = "In this area\nrandom sampling is worse", x = 0.55, y = 0.45, fontface = 3, size = 2.8, hjust = 0) +#
+  theme_minimal(base_size = 12, base_family = "Helvetica") +#
+  theme(legend.position = "none", axis.line = element_line(size=.5, color = "black"), #
+        panel.grid.major = element_line(size = .2, color = "grey90"),#
+        panel.grid.minor = element_line(size = .5, color = "grey98"),#
+        panel.margin = unit(0.8, "lines"))
+library(ggplot2)
+triangle <- data.frame(x = c(0.0, 1.0, 1.0), y = c(0.0, 1.0, 0.0))#
+#
+ggplot(data = models.comparison, aes(x = accuracy.current, y = accuracy.proposed, shape = multiclass)) +#
+  coord_cartesian(ylim = c(0.2, 1.03), xlim = c(0.2, 1.03)) +#
+  geom_polygon(data = triangle, aes(x = x, y = y), fill = "red", alpha = 0.15) +#
+  geom_point(size = 1) +#
+  facet_grid(quality.measurement ~ classifier, labeller = labeller(quality.measurement = quality_label)) +#
+  labs(x = "Accuracy with Min/Max Estimation", y = "Accuracy with Random Sampling") +#
+  #annotate("text", label = "In this area\nrandom sampling is worse", x = 0.55, y = 0.45, fontface = 3, size = 2.8, hjust = 0) +#
+  theme_minimal(base_size = 12, base_family = "Helvetica") +#
+  theme(legend.position = "none", axis.line = element_line(size=.5, color = "black"), #
+        panel.grid.major = element_line(size = .2, color = "grey90"),#
+        panel.grid.minor = element_line(size = .5, color = "grey98"),#
+        panel.margin = unit(0.8, "lines"))
+triangle <- data.frame(x = c(0.0, 1.0, 1.0), y = c(0.0, 1.0, 0.0))#
+#
+ggplot(data = models.comparison, aes(x = accuracy.current, y = accuracy.proposed, shape = multiclass)) +#
+  coord_cartesian(ylim = c(0.2, 1.03), xlim = c(0.2, 1.03)) +#
+  geom_polygon(data = triangle, aes(x = x, y = y), fill = "red", alpha = 0.15) +#
+  geom_point(size = 1) +#
+  facet_grid(quality.measurement ~ classifier) +#
+  labs(x = "Accuracy with Min/Max Estimation", y = "Accuracy with Random Sampling") +#
+  #annotate("text", label = "In this area\nrandom sampling is worse", x = 0.55, y = 0.45, fontface = 3, size = 2.8, hjust = 0) +#
+  theme_minimal(base_size = 12, base_family = "Helvetica") +#
+  theme(legend.position = "none", axis.line = element_line(size=.5, color = "black"), #
+        panel.grid.major = element_line(size = .2, color = "grey90"),#
+        panel.grid.minor = element_line(size = .5, color = "grey98"),#
+        panel.margin = unit(0.8, "lines"))
+triangle <- data.frame(x = c(0.0, 1.0, 1.0), y = c(0.0, 1.0, 0.0))#
+#
+ggplot(data = models.comparison, aes(x = accuracy.current, y = accuracy.proposed, shape = multiclass)) +#
+  coord_cartesian(ylim = c(0.2, 1.03), xlim = c(0.2, 1.03)) +#
+  geom_polygon(data = triangle, aes(x = x, y = y), fill = "red", alpha = 0.15) +#
+  geom_point(size = 1) +#
+  facet_grid(quality.measurement ~ classifier) +#
+  labs(x = "Accuracy with Min/Max Estimation", y = "Accuracy with Random Sampling") +#
+  #annotate("text", label = "In this area\nrandom sampling is worse", x = 0.55, y = 0.45, fontface = 3, size = 2.8, hjust = 0) +#
+  theme_minimal(base_size = 12, base_family = "Helvetica")
+models.comparison
+triangle <- data.frame(x = c(0.0, 1.0, 1.0), y = c(0.0, 1.0, 0.0))#
+#
+ggplot(data = models.comparison, aes(x = accuracy.current, y = accuracy.proposed)) +#
+  coord_cartesian(ylim = c(0.2, 1.03), xlim = c(0.2, 1.03)) +#
+  geom_polygon(data = triangle, aes(x = x, y = y), fill = "red", alpha = 0.15) +#
+  geom_point(size = 1) +#
+  facet_grid(quality.measurement ~ classifier) +#
+  labs(x = "Accuracy with Min/Max Estimation", y = "Accuracy with Random Sampling") +#
+  #annotate("text", label = "In this area\nrandom sampling is worse", x = 0.55, y = 0.45, fontface = 3, size = 2.8, hjust = 0) +#
+  theme_minimal(base_size = 12, base_family = "Helvetica")
+triangle <- data.frame(x = c(0.0, 1.0, 1.0), y = c(0.0, 1.0, 0.0))#
+#
+ggplot(data = models.comparison, aes(x = accuracy.current, y = accuracy.proposed, shape = multiclass)) +#
+  coord_cartesian(ylim = c(0.2, 1.03), xlim = c(0.2, 1.03)) +#
+  geom_polygon(data = triangle, aes(x = x, y = y), fill = "red", alpha = 0.15) +#
+  geom_point(size = 1) +#
+  facet_grid(quality.measurement ~ classifier) +#
+  labs(x = "Accuracy with Min/Max Estimation", y = "Accuracy with Random Sampling") +#
+  #annotate("text", label = "In this area\nrandom sampling is worse", x = 0.55, y = 0.45, fontface = 3, size = 2.8, hjust = 0) +#
+  theme_minimal(base_size = 12, base_family = "Helvetica")
+triangle <- data.frame(x = c(0.0, 1.0, 1.0), y = c(0.0, 1.0, 0.0))#
+#
+ggplot(data = models.comparison, aes(x = accuracy.current, y = accuracy.proposed, shape = classifier)) +#
+  coord_cartesian(ylim = c(0.2, 1.03), xlim = c(0.2, 1.03)) +#
+  geom_polygon(data = triangle, aes(x = x, y = y), fill = "red", alpha = 0.15) +#
+  geom_point(size = 1) +#
+  facet_grid(quality.measurement ~ classifier) +#
+  labs(x = "Accuracy with Min/Max Estimation", y = "Accuracy with Random Sampling") +#
+  #annotate("text", label = "In this area\nrandom sampling is worse", x = 0.55, y = 0.45, fontface = 3, size = 2.8, hjust = 0) +#
+  theme_minimal(base_size = 12, base_family = "Helvetica")
+triangle <- data.frame(x = c(0.0, 1.0, 1.0), y = c(0.0, 1.0, 0.0))#
+#
+ggplot(data = models.comparison, aes(x = accuracy.current, y = accuracy.proposed)) +#
+  coord_cartesian(ylim = c(0.2, 1.03), xlim = c(0.2, 1.03)) +#
+  geom_polygon(data = triangle, aes(x = x, y = y), fill = "red", alpha = 0.15) +#
+  geom_point(size = 1, aes(shape = multiclass)) +#
+  facet_grid(quality.measurement ~ classifier) +#
+  labs(x = "Accuracy with Min/Max Estimation", y = "Accuracy with Random Sampling") +#
+  #annotate("text", label = "In this area\nrandom sampling is worse", x = 0.55, y = 0.45, fontface = 3, size = 2.8, hjust = 0) +#
+  theme_minimal(base_size = 12, base_family = "Helvetica")
+?by
+by(data = models.comparison, list("quality.measurement", "classifier"), FUN = mean)
+by(data = models.comparison$accuracy.current, list("quality.measurement", "classifier"), FUN = mean)
+by(data = models.comparison$accuracy.current, c("quality.measurement", "classifier"), FUN = mean)
+by(data = models.comparison$accuracy.current, classifier, FUN = mean)
+with(data = models.comparison, by(accuracy.current, classifier, FUN = mean))
+with(data = models.comparison, by(accuracy.current, classifier + quality.measurement, FUN = mean))
+with(data = models.comparison, by(accuracy.current, list(classifier, quality.measurement), FUN = mean))
+with(data = models.comparison, by(accuracy.current, list(classifier, quality.measurement), FUN = friedman.test))
+with(data = models.comparison, by(accuracy.current, list(classifier, quality.measurement), FUN = friedman.test, groups = method, block = name))
+with(data = models.comparison, by(c(accuracy.current, name), list(classifier, quality.measurement), FUN = friedman.test, groups = method, block = name))
+with(data = models.comparison, by(models.comparison, list(classifier, quality.measurement), FUN = friedman.test, groups = method, block = name))
+with(data = models.comparison, by(models.comparison, list(classifier, quality.measurement), FUN = friedman.test, groups = accuracy.current, block = name))
+library(tidyr)
+longdf <- gather(models.comparison, method, accuracy, accuracy.current:accuracy.proposed)
+longdf
+by(gather(models.comparison, method, accuracy, accuracy.current:accuracy.proposed), list(classifier, quality.measurement), FUN = friedman.test, groups = accuracy.current, block = name)
+by(data=gather(models.comparison, method, accuracy, accuracy.current:accuracy.proposed), list(classifier, quality.measurement), FUN = friedman.test, groups = accuracy.current, block = name)
+with(data = longdf, by(longdf, list(classifier, quality.measurement), FUN = friedman.test, groups = accuracy.current, block = name))
+with(data = longdf, by(longdf, list(classifier, quality.measurement), FUN = friedman.test, groups = method, block = name))
+with(data = longdf, by(accuracy, list(classifier, quality.measurement), FUN = friedman.test, groups = method, block = name))
+str(longdf)
+with(data = longdf, by(longdf, list(classifier, quality.measurement), FUN = friedman.test, y = accuracy, groups = method, block = name))
+with(data = longdf, by(longdf, list(quality.measurement, classifier), FUN = friedman.test, y = accuracy, groups = method, block = name))
+with(data = longdf, by(longdf, list(quality.measurement), FUN = friedman.test, y = accuracy, groups = method, block = name))
+with(data = longdf, by(longdf, list(quality.measurement, classifier), FUN = friedman.test, y = accuracy, groups = method, block = name))
+with(data = longdf, by(longdf, list(classifier, quality.measurement), FUN = friedman.test, y = accuracy, groups = method, block = name))
+by(longdf, list(longdf$classifier, longdf$quality.measurement), FUN = friedman.test, y = accuracy, groups = method, block = name)
+by(longdf, list(longdf$classifier, longdf$quality.measurement), FUN = friedman.test, y = longdf$accuracy, groups = method, block = name)
+by(longdf, list(longdf$classifier, longdf$quality.measurement), FUN = friedman.test, y = longdf$accuracy, groups = longdf$method, block = longdf$name)
+aggregate(data = longdf, formula = accuracy ~ quality.measurement + classifier, FUN = mean)
+aggregate(formula = accuracy ~ quality.measurement + classifier, data = longdf, FUN = mean)
+aggregate(formula = accuracy ~ quality.measurement + classifier, data = longdf, FUN = friedman.test)
+aggregate(formula = accuracy ~ quality.measurement + classifier, data = longdf, FUN = friedman.test, groups = method, block = name)
+aggregate(formula = accuracy ~ quality.measurement + classifier, data = longdf, FUN = friedman.test, y = accuracy, groups = method, block = name)
+aggregate(formula = accuracy ~ quality.measurement + classifier, data = longdf, FUN = friedman.test, groups = method, block = name)
+aggregate(formula = c(accuracy, method, name) ~ quality.measurement + classifier, data = longdf, FUN = friedman.test, groups = method, block = name)
+?tapply
+tapply(longdf[ , c("accuracy", "method", "name")], INDEX = list(longdf$quality.measurement, longdf$classifier), FUN = friedman.test, groups = method, block = name)
+tapply(longdf, INDEX = list(longdf$quality.measurement, longdf$classifier), FUN = friedman.test, groups = method, block = name)
+tapply(longdf, INDEX = list(longdf$quality.measurement, longdf$classifier), FUN = mean)
+tapply(longdf, list(longdf$quality.measurement, longdf$classifier), FUN = mean)
+tapply(longdf$accuracy, list(longdf$quality.measurement, longdf$classifier), FUN = mean)
+?by
+by(longdf, longdf[,c("quality.measurement", "classifier")], function(x) friedman.test(y = x$accuracy, groups = x$method, block = x$name)$p.value)
+by(longdf, longdf[,c("quality.measurement", "classifier")], function(x) friedman.test(y = x$accuracy, groups = x$method, block = x$name)$p.value, simplify = FALSE)
+by(longdf, c("quality.measurement", "classifier"), function(x) friedman.test(y = x$accuracy, groups = x$method, block = x$name)$p.value, simplify = FALSE)
+tidy(by(longdf, c("quality.measurement", "classifier"), function(x) friedman.test(y = x$accuracy, groups = x$method, block = x$name)$p.value, simplify = FALSE))
+library(reshape2)#
+library(broom)#
+library(plyr)
+tidy(by(longdf, c("quality.measurement", "classifier"), function(x) friedman.test(y = x$accuracy, groups = x$method, block = x$name)$p.value, simplify = FALSE))
+rbind(by(longdf, c("quality.measurement", "classifier"), function(x) friedman.test(y = x$accuracy, groups = x$method, block = x$name)$p.value, simplify = FALSE))
+tidy(by(longdf, longdf[,c("quality.measurement", "classifier")], function(x) friedman.test(y = x$accuracy, groups = x$method, block = x$name)$p.value, simplify = FALSE))
+rbind(by(longdf, longdf[,c("quality.measurement", "classifier")], function(x) friedman.test(y = x$accuracy, groups = x$method, block = x$name)$p.value, simplify = FALSE))
+fv <- rbind(by(longdf, longdf[,c("quality.measurement", "classifier")], function(x) friedman.test(y = x$accuracy, groups = x$method, block = x$name)$p.value, simplify = FALSE))
+str(fv)
+str(data.frame(fv))
+df
+fv
+str(fv)
+as.matrix(fv)
+as.data.frame(fv)
+str(as.data.frame(fv))
+data.frame(matrix(unlist(by(longdf, longdf[,c("quality.measurement", "classifier")], function(x) friedman.test(y = x$accuracy, groups = x$method, block = x$name)$p.value, simplify = FALSE)), nrow=4, byrow=T),stringsAsFactors=FALSE)
+unlist(fv)
+do.call(rbind.data.frame, fv)
+do.call(rbind.data.frame, by(longdf, longdf[,c("quality.measurement", "classifier")], function(x) friedman.test(y = x$accuracy, groups = x$method, block = x$name)$p.value, simplify = FALSE))
+ldply(by(longdf, longdf[,c("quality.measurement", "classifier")], function(x) friedman.test(y = x$accuracy, groups = x$method, block = x$name)$p.value, simplify = FALSE))
+ldply(by(longdf, longdf[,c("quality.measurement", "classifier")], function(x) friedman.test(y = x$accuracy, groups = x$method, block = x$name)$p.value, simplify = FALSE), data.frame)
+data.frame(t(sapply(by(longdf, longdf[,c("quality.measurement", "classifier")], function(x) friedman.test(y = x$accuracy, groups = x$method, block = x$name)$p.value, simplify = FALSE), c)))
+data.frame(Reduce(rbind, by(longdf, longdf[,c("quality.measurement", "classifier")], function(x) friedman.test(y = x$accuracy, groups = x$method, block = x$name)$p.value, simplify = FALSE)))
+l <- melt(by(longdf, longdf[,c("quality.measurement", "classifier")], function(x) friedman.test(y = x$accuracy, groups = x$method, block = x$name)$p.value, simplify = FALSE))
+l <- by(longdf, longdf[,c("quality.measurement", "classifier")], function(x) friedman.test(y = x$accuracy, groups = x$method, block = x$name)$p.value, simplify = FALSE)
+l <- melt(l)
+l
+l <- by(longdf, longdf[,c("quality.measurement", "classifier")], function(x) friedman.test(y = x$accuracy, groups = x$method, block = x$name)$p.value, simplify = TRUE)
+dcast(l)
+melt(l)
+ldply(by(longdf, longdf[,c("quality.measurement", "classifier")], function(x) friedman.test(y = x$accuracy, groups = x$method, block = x$name)$p.value, simplify = TRUE), data.frame)
+ldply(by(longdf, longdf[,c("quality.measurement", "classifier")], function(x) friedman.test(y = x$accuracy, groups = x$method, block = x$name)$p.value), data.frame)
+str(ldply(by(longdf, longdf[,c("quality.measurement", "classifier")], function(x) friedman.test(y = x$accuracy, groups = x$method, block = x$name)$p.value), data.frame))
+l <- by(longdf, longdf[,c("quality.measurement", "classifier")], function(x) friedman.test(y = x$accuracy, groups = x$method, block = x$name)$p.value)
+as.data.frame(matrix(unlist(l), nrow=length(unlist(l[1]))))
+l
+lapply(l, ldply)
+ldply(lapply(l, ldply))
+ldply(lapply(l, ldply))[, 2:3]
+ldply(lapply(l, ldply))
+l
+str(l)
+?by
+sapply(by(longdf, longdf[,c("quality.measurement", "classifier")], function(x) friedman.test(y = x$accuracy, groups = x$method, block = x$name)), p.value)
+sapply(by(longdf, longdf[,c("quality.measurement", "classifier")], function(x) friedman.test(y = x$accuracy, groups = x$method, block = x$name)), coef)
+sapply(by(longdf, longdf[,c("quality.measurement", "classifier")], function(x) friedman.test(y = x$accuracy, groups = x$method, block = x$name)))
+by(longdf, longdf[,c("quality.measurement", "classifier")], function(x) friedman.test(y = x$accuracy, groups = x$method, block = x$name)
+)
+by(longdf, longdf[,c("quality.measurement", "classifier")], function(x) friedman.test(y = x$accuracy, groups = x$method, block = x$name)$p.value)
+tbl_df(l)
+l
+as.matrix(l)
+l
+ldply(l)
+str(l)
+attr(l, dimnames)
+attr(l, which=dimnames)
+?attr
+attr(l, which="classifier")
+attr(l, which="dimnames")
+l$p.value
+attr(l, which="call")
+as.numeric(l)
+matrix(data = as.numeric(l), nrow = 3, ncol = 4, dimnames = attr(l, which="dimnames"))
+as.data.frame(matrix(data = as.numeric(l), nrow = 3, ncol = 4, dimnames = attr(l, which="dimnames")))
+l
+?data.frame
+m <- matrix(data = as.numeric(l), nrow = 3, ncol = 4, dimnames = attr(l, which="dimnames"))
+m
+str(m)
+l
+strl
+str(l)
+melt(l)
+as.data.frame(as.table(matrix(data = as.numeric(l), nrow = 3, ncol = 4, dimnames = attr(l, which="dimnames"))))
+as.data.frame(melt(matrix(data = as.numeric(l), nrow = 3, ncol = 4, dimnames = attr(l, which="dimnames"))))
+?gather
+load("~/Desktop/models.RData")
+models.comparison$multiclass <- "2 Classes"#
+models.comparison$multiclass[models.comparison$no.classes > 2] <- "Multiple Classes"#
+models.comparison$multiclass <- as.factor(models.comparison$multiclass)
+longdf <- gather(models.comparison, method, accuracy, accuracy.current:accuracy.proposed)#
+friedman.values <- rbind(by(longdf,#
+                            longdf[,c("quality.measurement", "classifier")],#
+                            function(x) round(friedman.test(y = x$accuracy, groups = x$method, block = x$name)$p.value, 4)))#
+friedman.values <- as.data.frame(melt(matrix(data = as.numeric(friedman.values), #
+                                             nrow = 3, #
+                                             ncol = 4, #
+                                             dimnames = attr(friedman.values, which="dimnames"))))#
+friedman.values$value <- paste("p-value: ", friedman.values$value, sep="")
+friedman.values
+load("~/Desktop/models.RData")
+models.comparison$multiclass <- "2 Classes"#
+models.comparison$multiclass[models.comparison$no.classes > 2] <- "Multiple Classes"#
+models.comparison$multiclass <- as.factor(models.comparison$multiclass)
+longdf <- gather(models.comparison, method, accuracy, accuracy.current:accuracy.proposed)
+longdf
+by(longdf,#
+                            longdf[,c("quality.measurement", "classifier")],#
+                            function(x) round(friedman.test(y = x$accuracy, groups = x$method, block = x$name)$p.value, 4))
+friedman.values <- by(longdf,#
+                            longdf[,c("quality.measurement", "classifier")],#
+                            function(x) round(friedman.test(y = x$accuracy, groups = x$method, block = x$name)$p.value, 4))
+friedman.values
+friedman.values <- as.data.frame(melt(matrix(data = as.numeric(friedman.values), #
+                                             nrow = 3, #
+                                             ncol = 4, #
+                                             dimnames = attr(friedman.values, which="dimnames"))))
+friedman.values
+by(longdf,#
+                      longdf[,c("quality.measurement", "classifier")],#
+                      function(x) round(friedman.test(y = x$accuracy, groups = x$method, block = x$name)$p.value, 4))
+by(longdf,#
+                      longdf[,c("classifier", "quality.measurement")],#
+                      function(x) round(friedman.test(y = x$accuracy, groups = x$method, block = x$name)$p.value, 4))
+ggplot(data = models.comparison, aes(x = accuracy.current, y = accuracy.proposed)) +#
+  coord_cartesian(ylim = c(0.2, 1.03), xlim = c(0.2, 1.03)) +#
+  geom_polygon(data = triangle, aes(x = x, y = y), fill = "red", alpha = 0.15) +#
+  geom_point(size = 2, alpha = 0.6, aes(shape = multiclass)) + scale_shape_manual(values = c(16, 3)) +#
+  facet_grid(quality.measurement ~ classifier, labeller = labeller(quality.measurement = quality_label)) +#
+  labs(x = "Accuracy with Min/Max Estimation", y = "Accuracy with Random Sampling", shape = "Amount of Classes:") +#
+  geom_text(data = data.frame(accuracy.current = 0.45, accuracy.proposed = 0.3, classifier = "SVM", quality.measurement = "information.gain"), label = "In this area\nrandom sampling is worse", fontface = 3, size = 3, hjust = 0) +#
+  theme_minimal(base_size = 12, base_family = "Helvetica") +#
+  theme(legend.position = "bottom", axis.line = element_line(size=.5, color = "black"), #
+        panel.grid.major = element_line(size = .2, color = "grey90"),#
+        panel.grid.minor = element_line(size = .5, color = "grey98"),#
+        panel.margin = unit(0.8, "lines"))
+ggplot(data = models.comparison, aes(x = accuracy.current, y = accuracy.proposed)) +#
+  coord_cartesian(ylim = c(0.2, 1.03), xlim = c(0.2, 1.03)) +#
+  geom_polygon(data = triangle, aes(x = x, y = y), fill = "red", alpha = 0.15) +#
+  geom_point(size = 2, alpha = 0.6, aes(shape = multiclass)) + scale_shape_manual(values = c(16, 3)) +#
+  facet_grid(quality.measurement ~ classifier, labeller = labeller(quality.measurement = quality_label)) +#
+  labs(x = "Accuracy with Min/Max Estimation", y = "Accuracy with Random Sampling", shape = "Amount of Classes:") +#
+  geom_text(data = data.frame(accuracy.current = 0.45, accuracy.proposed = 0.3, classifier = "SVM", quality.measurement = "information.gain"), label = "In this area\nrandom sampling is worse", fontface = 3, size = 3, hjust = 0) +#
+  theme_minimal(base_size = 12, base_family = "Helvetica")
+ggplot(data = models.comparison, aes(x = accuracy.current, y = accuracy.proposed)) +#
+  coord_cartesian(ylim = c(0.2, 1.03), xlim = c(0.2, 1.03)) +#
+  geom_polygon(data = triangle, aes(x = x, y = y), fill = "red", alpha = 0.15) +#
+  geom_point(size = 2, alpha = 0.6, aes(shape = multiclass)) + scale_shape_manual(values = c(16, 3)) +#
+  facet_grid(quality.measurement ~ classifier) +#
+  labs(x = "Accuracy with Min/Max Estimation", y = "Accuracy with Random Sampling", shape = "Amount of Classes:") +#
+  geom_text(data = data.frame(accuracy.current = 0.45, accuracy.proposed = 0.3, classifier = "SVM", quality.measurement = "information.gain"), label = "In this area\nrandom sampling is worse", fontface = 3, size = 3, hjust = 0) +#
+  theme_minimal(base_size = 12, base_family = "Helvetica")
+friedmanMatrix <- matrix(data = NA, ncol = 3, nrow = 4)#
+rownames(friedmanMatrix) <- c("Nearest Neighbor", "Random Forest", "SVM", "C5.0 Decision Tree")#
+colnames(friedmanMatrix) <- c("f.statistic", "in.class.transitions", "information.gain")#
+#
+comparison <- models.comparison[, c("name", "classifier", "quality.measurement")]#
+comparison <- rbind(comparison, comparison)#
+comparison$accuracy <- c(models.comparison$min.max.estimation, models.comparison$random.sampling)#
+comparison$method <- rep(c("Min/Max Estimation", "Random Sampling"), each = dim(comparison)[1]/2)#
+#
+for (i in 1:3) {#
+  for (j in 1:3) {#
+    friedmanMatrix[i, j] <- with(data = subset(comparison, comparison$classifier == rownames(friedmanMatrix)[i] & comparison$quality.measurement == colnames(friedmanMatrix)[j]), friedman.test(y = accuracy, groups = method, block = name)$p.value)#
+  }#
+}
+friedmanMatrix <- matrix(data = NA, ncol = 3, nrow = 4)#
+rownames(friedmanMatrix) <- c("Nearest Neighbor", "Random Forest", "SVM", "C5.0 Decision Tree")#
+colnames(friedmanMatrix) <- c("f.statistic", "in.class.transitions", "information.gain")#
+#
+comparison <- models.comparison[, c("name", "classifier", "quality.measurement")]#
+comparison <- rbind(comparison, comparison)#
+comparison$accuracy <- c(models.comparison$accuracy.current, models.comparison$accuracy.proposed)#
+comparison$method <- rep(c("Min/Max Estimation", "Random Sampling"), each = dim(comparison)[1]/2)#
+#
+for (i in 1:3) {#
+  for (j in 1:3) {#
+    friedmanMatrix[i, j] <- with(data = subset(comparison, comparison$classifier == rownames(friedmanMatrix)[i] & comparison$quality.measurement == colnames(friedmanMatrix)[j]), friedman.test(y = accuracy, groups = method, block = name)$p.value)#
+  }#
+}
+comparison
+friedmanMatrix
+friedmanMatrix <- matrix(data = NA, ncol = 3, nrow = 4)#
+rownames(friedmanMatrix) <- c("Nearest Neighbor", "Random Forest", "SVM", "C5.0 Decision Tree")#
+colnames(friedmanMatrix) <- c("f.statistic", "in.class.transitions", "information.gain")#
+#
+comparison <- models.comparison[, c("name", "classifier", "quality.measurement")]#
+comparison <- rbind(comparison, comparison)#
+comparison$accuracy <- c(models.comparison$accuracy.current, models.comparison$accuracy.proposed)#
+comparison$method <- rep(c("Min/Max Estimation", "Random Sampling"), each = dim(comparison)[1]/2)#
+#
+for (i in 1:4) {#
+  for (j in 1:3) {#
+    friedmanMatrix[i, j] <- with(data = subset(comparison, comparison$classifier == rownames(friedmanMatrix)[i] & comparison$quality.measurement == colnames(friedmanMatrix)[j]), friedman.test(y = accuracy, groups = method, block = name)$p.value)#
+  }#
+}
+i =1
+j=1
+subset(comparison, comparison$classifier == rownames(friedmanMatrix)[i] & comparison$quality.measurement == colnames(friedmanMatrix)[j])
+rownames(friedmanMatrix)[i]
+colnames(friedmanMatrix)[j]
+comparison$classifier == rownames(friedmanMatrix)[i]
+str(comparison)
+friedmanMatrix <- matrix(data = NA, ncol = 3, nrow = 4)#
+rownames(friedmanMatrix) <- c("Nearest Neighbour", "Random Forest", "SVM", "C5.0 Decision Tree")#
+colnames(friedmanMatrix) <- c("f.statistic", "in.class.transitions", "information.gain")#
+#
+comparison <- models.comparison[, c("name", "classifier", "quality.measurement")]#
+comparison <- rbind(comparison, comparison)#
+comparison$accuracy <- c(models.comparison$accuracy.current, models.comparison$accuracy.proposed)#
+comparison$method <- rep(c("Min/Max Estimation", "Random Sampling"), each = dim(comparison)[1]/2)#
+#
+for (i in 1:4) {#
+  for (j in 1:3) {#
+    friedmanMatrix[i, j] <- with(data = subset(comparison, comparison$classifier == rownames(friedmanMatrix)[i] & comparison$quality.measurement == colnames(friedmanMatrix)[j]), friedman.test(y = accuracy, groups = method, block = name)$p.value)#
+  }#
+}
+friedmanMatrix
+proposed <- subset(models.comparison, models.comparison$quality.measurement == "in.class.transitions")[ , c("name", "classifier", "accuracy.proposed", "multiclass")]#
+current <- subset(models.comparison, models.comparison$quality.measurement == "information.gain")[ , c("name", "classifier", "accuracy.current", "multiclass")]#
+comparison <- merge(proposed, current, by = c("name", "classifier", "multiclass"))
+longdf <- gather(comparison, method, accuracy, accuracy.current:accuracy.proposed)#
+friedman.values <- by(longdf,#
+                      longdf$classifier,#
+                      function(x) round(friedman.test(y = x$accuracy, groups = x$method, block = x$name)$p.value, 4))
+friedman.values
+ldply(friedman.values)
+?ldply
+friedman.values <- as.data.frame(melt(matrix(data = as.numeric(friedman.values), #
+                                             nrow = 3, #
+                                             ncol = 4, #
+                                             dimnames = attr(friedman.values, which="dimnames"))))
+ldply
+friedman.values
+str(friedman.values)
+friedman.values <- as.data.frame(melt(matrix(data = as.numeric(friedman.values), #
+                                             nrow = 1, #
+                                             ncol = 4, #
+                                             dimnames = attr(friedman.values, which="dimnames"))))
+friedman.values <- as.data.frame(melt(matrix(data = as.numeric(friedman.values), #
+                                             nrow = 1, #
+                                             ncol = 4, #
+                                             colnames = attr(friedman.values, which="dimnames"))))
+friedman.values
+ldply(friedman.values, data.frame)
+ldply(friedman.values, data.frame, .id = "classifier")
+ldply(friedman.values, data.frame, .id = "classifier", "value")
+ldply(friedman.values, data.frame, .id = "classifier")
+?ldply
+do.call(rbind, friedman.values)
+do.call(rbind, by(longdf,#
+                      longdf$classifier,#
+                      function(x) round(friedman.test(y = x$accuracy, groups = x$method, block = x$name)$p.value, 4)))
+rbind(by(longdf,#
+                      longdf$classifier,#
+                      function(x) round(friedman.test(y = x$accuracy, groups = x$method, block = x$name)$p.value, 4)))
+melt(rbind(by(longdf,#
+                      longdf$classifier,#
+                      function(x) round(friedman.test(y = x$accuracy, groups = x$method, block = x$name)$p.value, 4))))
+cbind(by(longdf,#
+                      longdf$classifier,#
+                      function(x) round(friedman.test(y = x$accuracy, groups = x$method, block = x$name)$p.value, 4)))
+data.frame(cbind(by(longdf,#
+                      longdf$classifier,#
+                      function(x) round(friedman.test(y = x$accuracy, groups = x$method, block = x$name)$p.value, 4))))
+data.frame("accuracy" = cbind(by(longdf,#
+                      longdf$classifier,#
+                      function(x) round(friedman.test(y = x$accuracy, groups = x$method, block = x$name)$p.value, 4))))
+data.frame(rbind(by(longdf,#
+                      longdf$classifier,#
+                      function(x) round(friedman.test(y = x$accuracy, groups = x$method, block = x$name)$p.value, 4))))
+melt(data.frame(rbind(by(longdf,#
+                      longdf$classifier,#
+                      function(x) round(friedman.test(y = x$accuracy, groups = x$method, block = x$name)$p.value, 4)))))
+?melt
+melt(data.frame(rbind(by(longdf,#
+                      longdf$classifier,#
+                      function(x) round(friedman.test(y = x$accuracy, groups = x$method, block = x$name)$p.value, 4)))))
+friedman.values <- by(longdf,#
+                      longdf$classifier,#
+                      function(x) paste("p-value: ", round(friedman.test(y = x$accuracy, groups = x$method, block = x$name)$p.value, 4), sep = ""))
+melt(data.frame(rbind(friedman.values)), value.name = "accuracy")
+by(longdf,#
+                      longdf$classifier,#
+                      function(x) paste("p-value: ", round(friedman.test(y = x$accuracy, groups = x$method, block = x$name)$p.value, 4), sep = ""))
+x <- by(longdf,#
+                      longdf$classifier,#
+                      function(x) paste("p-value: ", round(friedman.test(y = x$accuracy, groups = x$method, block = x$name)$p.value, 4), sep = ""))
+melt(x)
+ldply(x)
+ldply(x, .id = "classifier")
+ldply(x, .id = "classifier", function(x) data.frame("value" = x))
+?pdf
+library(R.matlab)
+x <- readMat("~/Downloads/Assignment1/Datasets/dataset1.mat")
+str(x)
+x
+plot(x$neg.examples.nobias)
+points(x$pos.examples.nobias)
+plot(x$neg.examples.nobias, color = "red")
+plot(x$neg.examples.nobias, col = "red")
+points(x$pos.examples.nobias, col = "blue")
+plot(x$neg.examples.nobias, col = "red", xlim = c(1,-1), ylim=c(1,-1))
+points(x$pos.examples.nobias, col = "blue")
+x <- readMat("~/Downloads/Assignment1/Datasets/dataset2.mat")
+plot(x$neg.examples.nobias, col = "red", xlim = c(1,-1), ylim=c(1,-1))
+points(x$pos.examples.nobias, col = "blue")
+x <- readMat("~/Downloads/Assignment1/Datasets/dataset3.mat")
+plot(x$neg.examples.nobias, col = "red", xlim = c(1,-1), ylim=c(1,-1))
+points(x$pos.examples.nobias, col = "blue")
+x <- readMat("~/Downloads/Assignment1/Datasets/dataset4.mat")
+plot(x$neg.examples.nobias, col = "red", xlim = c(1,-1), ylim=c(1,-1))
+points(x$pos.examples.nobias, col = "blue")
+library(microbenchmark)
+?microbenchmark
+man ldply
+?ldply
+library(rbenchmark)#
+#
+library(Rcpp)#
+library(RcppParallel)#
+#
+library(R.matlab)#
+#
+library(reshape2)#
+library(broom)#
+library(plyr)#
+library(tidyr)#
+#
+library(foreach)#
+library(doParallel)#
+#
+library(ggplot2)#
+#library(gridExtra)#
+#require(grid)#
+#library(TeachingDemos)#
+#
+library(caret)#
+#
+library(class) # Nearest Neighbour#
+library(e1071) # SVM#
+library(randomForest) # Random Forest#
+library(C50) # decision tree C5.0#
+#
+library(knitr)#
+library(xtable)
+setwd("~/Desktop/Mestrado/SSQM/")
+readDataSet <- function(path) {#
+  if (grepl("Mat$", path, ignore.case = TRUE) == TRUE) {#
+    x <- readMat(path)#
+    x <- data.frame(x[[1]])#
+  }#
+  else {#
+    x <- read.table(path)#
+  }#
+#
+  names(x)[1] <- "class"#
+  if (min(x$class) == 0) {#
+  	x$class <- x$class + 1#
+	}#
+  names(x)[2:dim(x)[2]] <- 1:(dim(x)[2] - 1)#
+  x$class <- as.factor(x$class)#
+  x$id <- seq(1:dim(x)[1])#
+  x#
+}
+ds <- readDataSet("./../UCR_TS_Archive_2015/Pre_Summer_2015_Datasets/Gun_Point/Gun_Point_TRAIN")
+dim(ds)
+names(ds)
+ds <- gather(ds, time, value, 2:151)
+ggplot(data = ds, aes(x = time, y = value, group = id, color = class)) + geom_line()
+ggplot(data = ds, aes(x = time, y = value, group = id, color = class)) + geom_line() + facet_wrap( ~ class)
+?gather
+ds <- readDataSet("./../UCR_TS_Archive_2015/Pre_Summer_2015_Datasets/Gun_Point/Gun_Point_TRAIN")#
+ds <- gather(ds, time, value, 2:151, convert = TRUE)
+ggplot(data = ds, aes(x = time, y = value, group = id, color = class)) + geom_line() + facet_wrap( ~ class)
+ds <- readDataSet("./../UCR_TS_Archive_2015/Pre_Summer_2015_Datasets/Gun_Point/Gun_Point_TRAIN")#
+ds <- gather(ds, time, value, 2:151, convert = TRUE)#
+ggplot(data = ds, aes(x = time, y = value, group = id, color = class)) + geom_line(alpha = 0.8) + facet_wrap( ~ class) + theme_minimal()
+ds <- readDataSet("./../UCR_TS_Archive_2015/Pre_Summer_2015_Datasets/Gun_Point/Gun_Point_TRAIN")#
+ds <- gather(ds, time, value, 2:151, convert = TRUE)#
+ggplot(data = ds, aes(x = time, y = value, group = id, color = class)) + #
+  geom_line(alpha = 0.8) + #
+  facet_wrap( ~ class) + #
+  labs(x = "Time", y = "", title = "GunPoint Dataset") + #
+  theme_minimal(base_size = 12, base_family = "Helvetica") +#
+  theme(legend.position = "none", strip.text.x = element_blank())
+ds <- readDataSet("./../UCR_TS_Archive_2015/Pre_Summer_2015_Datasets/Gun_Point/Gun_Point_TRAIN")#
+ds <- gather(ds, time, value, 2:151, convert = TRUE)#
+ggplot(data = ds, aes(x = time, y = value, group = id, color = class)) + #
+  geom_line(alpha = 0.8) + #
+  facet_wrap( ~ class) + #
+  labs(x = "Time", y = "", title = "GunPoint Dataset") + #
+  theme_minimal(base_size = 12, base_family = "Helvetica") +#
+  theme(legend.position = "none", strip.text.x = element_blank(),#
+        axis.line = element_line(size=.5, color = "black"), #
+        panel.grid.major = element_line(size = .2, color = "grey90"),#
+        panel.grid.minor = element_line(size = .5, color = "grey98"),#
+        panel.spacing = unit(0.8, "lines"))
+ds <- readDataSet("./../UCR_TS_Archive_2015/Pre_Summer_2015_Datasets/Gun_Point/Gun_Point_TRAIN")#
+ds <- gather(ds, time, value, 2:151, convert = TRUE)#
+ggplot(data = ds, aes(x = time, y = value, group = id, color = class)) + #
+  geom_line(alpha = 0.8) + #
+  facet_wrap( ~ class) + #
+  labs(x = "Time", y = "", title = "GunPoint Dataset") + #
+  theme_minimal(base_size = 12, base_family = "Helvetica") +#
+  theme(legend.position = "none", strip.text.x = element_blank(),#
+        axis.line = element_line(size=.5, color = "black"), #
+        panel.grid.major = element_line(size = .2, color = "grey90"),#
+        panel.grid.minor = element_line(size = .5, color = "grey98"),#
+        panel.spacing = unit(0.8, "lines"))
+ds <- readDataSet("./../UCR_TS_Archive_2015/Pre_Summer_2015_Datasets/Gun_Point/Gun_Point_TRAIN")#
+ds <- gather(ds, time, value, 2:151, convert = TRUE)#
+range <- data.frame("class" = 1,#
+                    "fill" = "orange",#
+                    min = c(15, 100),#
+                    max = c(45, 150),#
+                    stringsAsFactors = FALSE)#
+ggplot(data = ds, aes(x = time, y = value, group = id, color = class)) + #
+  geom_line(alpha = 0.8) + #
+  geom_rect(data = range, inherit.aes=FALSE, aes(xmin = min, xmax = max, ymin = -Inf, ymax = Inf, fill = fill), alpha = 0.3) +#
+  facet_wrap( ~ class) + #
+  labs(x = "Time", y = "", title = "GunPoint Dataset") + #
+  theme_minimal(base_size = 12, base_family = "Helvetica") +#
+  theme(legend.position = "none", strip.text.x = element_blank(),#
+        axis.line = element_line(size=.5, color = "black"), #
+        panel.grid.major = element_line(size = .2, color = "grey90"),#
+        panel.grid.minor = element_line(size = .5, color = "grey98"),#
+        panel.spacing = unit(0.8, "lines"))
+ds <- readDataSet("./../UCR_TS_Archive_2015/Pre_Summer_2015_Datasets/Gun_Point/Gun_Point_TRAIN")#
+ds <- gather(ds, time, value, 2:151, convert = TRUE)#
+range <- data.frame("class" = 1,#
+                    "fill" = "orange",#
+                    min = c(15, 100),#
+                    max = c(45, 150),#
+                    stringsAsFactors = FALSE)#
+ggplot(data = ds, aes(x = time, y = value, group = id, color = class)) + #
+  geom_line(alpha = 0.8) + #
+  geom_rect(data = range, inherit.aes=FALSE, aes(xmin = min, xmax = max, ymin = -Inf, ymax = Inf, color = fill), alpha = 0.3) +#
+  facet_wrap( ~ class) + #
+  labs(x = "Time", y = "Value", #
+       title = "The highlighted time interval indicates where good shapelets are expected to be found (GunPoint dataset)") + #
+  theme_minimal(base_size = 12, base_family = "Helvetica") +#
+  theme(legend.position = "none", strip.text.x = element_blank(),#
+        axis.line = element_line(size=.5, color = "black"), #
+        panel.grid.major = element_line(size = .2, color = "grey90"),#
+        panel.grid.minor = element_line(size = .5, color = "grey98"),#
+        panel.spacing = unit(0.8, "lines"))
+ds <- readDataSet("./../UCR_TS_Archive_2015/Pre_Summer_2015_Datasets/Gun_Point/Gun_Point_TRAIN")#
+ds <- gather(ds, time, value, 2:151, convert = TRUE)#
+range <- data.frame("class" = 1,#
+                    "fill" = "orange",#
+                    min = c(15, 100),#
+                    max = c(45, 150),#
+                    stringsAsFactors = FALSE)#
+ggplot(data = ds, aes(x = time, y = value, group = id, color = class)) + #
+  geom_line(alpha = 0.8) + #
+  geom_rect(data = range, inherit.aes=FALSE, aes(xmin = min, xmax = max, ymin = -Inf, ymax = Inf), fill = "orange", alpha = 0.3) +#
+  facet_wrap( ~ class) + #
+  labs(x = "Time", y = "Value", #
+       title = "The highlighted time interval indicates where good shapelets are expected to be found (GunPoint dataset)") + #
+  theme_minimal(base_size = 12, base_family = "Helvetica") +#
+  theme(legend.position = "none", strip.text.x = element_blank(),#
+        axis.line = element_line(size=.5, color = "black"), #
+        panel.grid.major = element_line(size = .2, color = "grey90"),#
+        panel.grid.minor = element_line(size = .5, color = "grey98"),#
+        panel.spacing = unit(0.8, "lines"))

@@ -974,4 +974,8 @@ All of our experiments were run on a MacBookPro 2,3GHz Intel Core i7 of 4 cores 
 sessionInfo()
 ```
 
+# Acknowledgements
+
+My Master's work was funded by Fundacao de Amparo a Pesquisa do Estado de Sao Paulo (FAPESP - 2013/16164-2). The dissertation is available at the [Universidade de Sao Paulo's Digital Library](http://www.teses.usp.br/teses/disponiveis/55/55134/tde-07112016-162458/pt-br.php).
+
 # References
