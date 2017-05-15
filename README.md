@@ -23,6 +23,4 @@ classifiers accuracy.
 
 ## Results and Experiments
 
-My experiments are 100% reproducible and can be easily executed by running **SSQM.Rmd** with all of the supporting files contained
-in this folder. The output of this .Rmd is the [**SSQM.md** report](https://github.com/lucasschmidtc/SSQM/blob/master/SSQM.md),
-which mixes code, graphs and text to detail each step of my research/experiments.
+My experiments are 100% reproducible and can be easily executed by running **SSQM.Rmd** with all of the supporting files contained in this folder. The output of this .Rmd is the [**SSQM.md** report, which mixes code, graphs and text to detail each step of my research/experiments](https://github.com/lucasschmidtc/SSQM/blob/master/SSQM.md).
