@@ -16,10 +16,7 @@ development of quality measures that ranks these patterns. At the literature the
 information gain, and recently it was proposed the use of f-statistic; at this work we propose a new one called in-class 
 transitions.
 
-2. From a data set of time series, initially every possible subsequence is a candidate for a good shapelet. However, to explore this
-full search-space can be computationally prohibitive, thus a reduction of this search-space is required. At this work it is explored
-how the use of random sampling at different levels of sampling affects the quality of good shapelets found and its impact on the
-classifiers accuracy.
+2. From a data set of time series, initially every possible subsequence is a candidate for a good shapelet. However, to explore this full search-space can be computationally prohibitive, thus a reduction of this search-space is required. At this work it is explored how the use of random sampling at different levels of sampling impacts the classifiers accuracy.
 
 ## Results and Experiments
 
